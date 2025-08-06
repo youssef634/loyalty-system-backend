@@ -1,22 +1,39 @@
+// app.module.ts
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import * as dotenv from 'dotenv'
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { PrismaService } from './prisma/prisma.service/prisma.service';
-import { PassportModule } from '@nestjs/passport';
-import { JwtModule } from '@nestjs/jwt';
-dotenv.config()
+import { RegisterModule } from './auth/register/register.module';
+import { JwtStrategy } from './auth/strategy';
 
 @Module({
-  imports: [ConfigModule.forRoot({isGlobal:true}), PassportModule.register({defaultStrategy: 'jwt'}), JwtModule.register({
-    secret: process.env.JWT_SECRET,
-    global: true
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (config: ConfigService) => {
+        const secret = config.get<string>('SECRET');
+        return {
+          secret,
+          signOptions: { expiresIn: '7d' },
+        };
+      },
+      global: true,
     }),
+
+
     PrismaModule,
+    RegisterModule,
   ],
   controllers: [AppController],
-  providers: [AppService, ConfigService, PrismaService,],
+  providers: [AppService, ConfigService, PrismaService, JwtStrategy],
 })
-export class AppModule {}
+export class AppModule { }
