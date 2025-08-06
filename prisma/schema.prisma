@@ -24,6 +24,17 @@ model User {
   role        Role    @default(USER)
   points      Int     @default(0)
   transactions Transaction[]
+  resetPasswordTokens   ResetPasswordToken[]
+}
+
+model ResetPasswordToken {
+  id         Int    @id @default(autoincrement())
+  userId     Int
+  randomCode Int
+  token      String @db.VarChar
+  user       User   @relation(fields: [userId], references: [id])
+
+  @@map("resetPasswordToken")
 }
 
 model Reward {

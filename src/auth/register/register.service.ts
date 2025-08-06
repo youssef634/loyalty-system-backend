@@ -6,13 +6,16 @@ import {
 import { PrismaService } from '../../prisma/prisma.service/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import * as nodemailer from 'nodemailer';
+import { ResetPasswordDto, ResetPasswordRequestDto } from './dto/reset-password.dto';
+
 import {
     LoginDto,
     RegisterDto,
     UpdateNameDto,
     UpdatePasswordDto,
 } from './dto/register.dto';
-import { Response } from 'express';
+
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -113,10 +116,10 @@ export class RegisterService {
 
     // Update Name
     async updateName(userId: number, dto: UpdateNameDto) {
-        const {firstName , lastName} = dto;
+        const { firstName, lastName } = dto;
         const updatedUser = await this.prisma.user.update({
             where: { id: userId },
-            data: { firstName: firstName , lastName: lastName },
+            data: { firstName: firstName, lastName: lastName },
         });
 
         const { password, ...userWithoutPassword } = updatedUser;
@@ -161,5 +164,56 @@ export class RegisterService {
             user: userWithoutPassword,
         };
     }
+
+    async requestResetPassword({ email }: ResetPasswordRequestDto) {
+        const user = await this.prisma.user.findUnique({ where: { email } });
+        if (!user) throw new BadRequestException('User not found');
+
+        const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        await this.prisma.resetPasswordToken.create({
+            data: {
+                userId: user.id,
+                randomCode: parseInt(randomCode),
+                token: randomCode,
+            },
+        });
+
+        const resetLink = `http://localhost:3001/reset-password?token=${encodeURIComponent(randomCode)}`;
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+            },
+        });
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Reset Your Password',
+            text: `Click the link to reset your password: ${resetLink}`,
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        return { message: 'Password reset link sent to your email.' };
+    }
+
+    async resetPassword({ token, newPassword }: ResetPasswordDto) {
+        const resetToken = await this.prisma.resetPasswordToken.findFirst({ where: { token } });
+        if (!resetToken) throw new BadRequestException('Invalid or expired token');
+
+        await this.prisma.user.update({
+            where: { id: resetToken.userId },
+            data: { password: await bcrypt.hash(newPassword, 10) },
+        });
+
+        await this.prisma.resetPasswordToken.delete({ where: { id: resetToken.id } });
+
+        return { message: 'Password reset successfully.' };
+    }
+
 
 }
