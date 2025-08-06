@@ -48,7 +48,8 @@ export class RegisterService {
 
         const newUser = await this.prisma.user.create({
             data: {
-                name: data.name,
+                firstName: data.firstName,
+                lastName: data.lastName,
                 phone: data.phone,
                 email: data.email,
                 password: hashedPassword,
@@ -59,7 +60,8 @@ export class RegisterService {
             message: 'User registered successfully',
             user: {
                 id: newUser.id,
-                name: newUser.name,
+                firstName: newUser.firstName,
+                lastName: newUser.lastName,
                 email: newUser.email,
                 phone: newUser.phone,
             },
@@ -88,7 +90,8 @@ export class RegisterService {
             token,
             user: {
                 id: user.id,
-                name: user.name,
+                firstName: user.firstName,
+                lastName: user.lastName,
                 email: user.email,
                 phone: user.phone,
             },
@@ -110,10 +113,10 @@ export class RegisterService {
 
     // Update Name
     async updateName(userId: number, dto: UpdateNameDto) {
-        const {name} = dto;
+        const {firstName , lastName} = dto;
         const updatedUser = await this.prisma.user.update({
             where: { id: userId },
-            data: { name },
+            data: { firstName: firstName , lastName: lastName },
         });
 
         const { password, ...userWithoutPassword } = updatedUser;
