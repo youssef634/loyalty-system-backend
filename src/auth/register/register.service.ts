@@ -201,19 +201,28 @@ export class RegisterService {
         return { message: 'Password reset link sent to your email.' };
     }
 
-    async resetPassword({ token, newPassword }: ResetPasswordDto) {
-        const resetToken = await this.prisma.resetPasswordToken.findFirst({ where: { token } });
-        if (!resetToken) throw new BadRequestException('Invalid or expired token');
+    async resetPassword(token: string, newPassword: string) {
+        if (!token) {
+            throw new BadRequestException('Token is required');
+        }
+
+        const resetToken = await this.prisma.resetPasswordToken.findFirst({
+            where: { token },
+        });
+
+        if (!resetToken) {
+            throw new BadRequestException('Invalid or expired token');
+        }
 
         await this.prisma.user.update({
             where: { id: resetToken.userId },
             data: { password: await bcrypt.hash(newPassword, 10) },
         });
 
-        await this.prisma.resetPasswordToken.delete({ where: { id: resetToken.id } });
+        await this.prisma.resetPasswordToken.delete({
+            where: { id: resetToken.id },
+        });
 
         return { message: 'Password reset successfully.' };
     }
-
-
 }

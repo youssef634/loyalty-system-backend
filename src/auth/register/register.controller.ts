@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Put, UseGuards, Request, } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, UseGuards, Request, Query, } from '@nestjs/common';
 import { RegisterService } from './register.service';
 import { RegisterDto, LoginDto, UpdateNameDto, UpdatePasswordDto } from './dto/register.dto';
 import { ResetPasswordDto, ResetPasswordRequestDto } from './dto/reset-password.dto';
@@ -42,9 +42,14 @@ export class RegisterController {
         return await this.registerService.requestResetPassword(body);
     }
 
+    // controller
     @Post('reset-password')
-    async resetPassword(@Body() body: ResetPasswordDto) {
-        return await this.registerService.resetPassword(body);
+    async resetPassword(
+        @Query('token') token: string,
+        @Body() body: ResetPasswordDto,
+    ) {
+        return await this.registerService.resetPassword(token, body.newPassword);
     }
+
 
 }
