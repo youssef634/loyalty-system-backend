@@ -1,6 +1,8 @@
-import {Body,Controller,Get,Post,Put,UseGuards,Request,} from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, UseGuards, Request, } from '@nestjs/common';
 import { RegisterService } from './register.service';
 import { RegisterDto, LoginDto, UpdateNameDto, UpdatePasswordDto } from './dto/register.dto';
+import { ResetPasswordDto, ResetPasswordRequestDto } from './dto/reset-password.dto';
+
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
@@ -34,4 +36,15 @@ export class RegisterController {
     updatePassword(@Request() req: any, @Body() body: UpdatePasswordDto) {
         return this.registerService.updatePassword(req.user.id, body);
     }
+
+    @Post('request-reset-password')
+    async requestResetPassword(@Body() body: ResetPasswordRequestDto) {
+        return await this.registerService.requestResetPassword(body);
+    }
+
+    @Post('reset-password')
+    async resetPassword(@Body() body: ResetPasswordDto) {
+        return await this.registerService.resetPassword(body);
+    }
+
 }
