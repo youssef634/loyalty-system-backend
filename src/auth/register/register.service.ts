@@ -219,7 +219,7 @@ export class RegisterService {
             data: { password: await bcrypt.hash(newPassword, 10) },
         });
 
-        await this.prisma.resetPasswordToken.delete({
+        await this.prisma.resetPasswordToken.deleteMany({
             where: { id: resetToken.id },
         });
 
