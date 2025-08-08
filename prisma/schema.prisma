@@ -28,14 +28,16 @@ model User {
 }
 
 model ResetPasswordToken {
-  id         Int    @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   userId     Int
   randomCode Int
-  token      String @db.VarChar
-  user       User   @relation(fields: [userId], references: [id])
+  token      String   @db.VarChar
+  expiresAt  DateTime
+  user       User     @relation(fields: [userId], references: [id])
 
   @@map("resetPasswordToken")
 }
+
 
 model Reward {
   id         Int    @id @default(autoincrement())
