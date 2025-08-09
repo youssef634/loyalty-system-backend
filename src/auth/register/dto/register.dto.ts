@@ -1,13 +1,13 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
 export class RegisterDto {
   @IsNotEmpty()
   @IsString()
-  firstName: string;
+   enName: string;
 
   @IsNotEmpty()
   @IsString()
-  lastName: string;
+  arName: string;
 
   @IsNotEmpty()
   @IsString()
@@ -38,13 +38,15 @@ export class LoginDto {
 }
 
 export class UpdateNameDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  firstName: string;
+  @Matches(/^[A-Za-z\s]+$/, { message: 'enName must contain only English letters' })
+  enName?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  lastName: string;
+  @Matches(/^[\u0600-\u06FF\s]+$/, { message: 'arName must contain only Arabic letters' })
+  arName?: string;
 }
 
 export class UpdatePasswordDto {

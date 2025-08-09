@@ -1,39 +1,43 @@
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-//import { PrismaClientExceptionFilter } from './middlewares/prisma.handler.errors';
-import * as dotenv from 'dotenv'
+import * as dotenv from 'dotenv';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as bodyParser from 'body-parser';
 import * as path from 'path';
 
 async function bootstrap() {
-  dotenv.config()
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {})
+  dotenv.config();
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {});
+  
   app.enableCors();
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true
-  }))
+  
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+    })
+  );
+  
   app.use(bodyParser.json({ limit: '50mb' }));
   app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
-  
-  app.useStaticAssets(path.join(__dirname, '..', 'public') , 
-  {
+
+  // ✅ Serve /public as before
+  app.useStaticAssets(path.join(__dirname, '..', 'public'), {
     prefix: '/api/public',
   });
 
-  app.useStaticAssets(join(__dirname, "../uploads"))
-  const { httpAdapter } = app.get(HttpAdapterHost);
+  // ✅ Serve /uploads as public so images are accessible
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads', 
+  });
 
-  // app.useGlobalFilters(
-  //   new PrismaClientExceptionFilter(httpAdapter),
-  // )
-  app.setGlobalPrefix("/api")
+  app.setGlobalPrefix('/api');
 
-  const PORT = process.env.PORT || 3001
+  const PORT = process.env.PORT || 3001;
   await app.listen(PORT, () => {
-    console.log(`server in on port: ${PORT}`)
+    console.log(`Server is running on port: ${PORT}`);
   });
 }
+
 bootstrap();

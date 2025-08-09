@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Post, Put, UseGuards, Request, } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, UseGuards, Request, Param, Patch, UploadedFile, UseInterceptors, Req, } from '@nestjs/common';
 import { RegisterService } from './register.service';
 import { RegisterDto, LoginDto, UpdateNameDto, UpdatePasswordDto } from './dto/register.dto';
 import { ResetPasswordDto, ResetPasswordRequestDto } from './dto/reset-password.dto';
 
 import { AuthGuard } from '@nestjs/passport';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('auth')
 export class RegisterController {
@@ -45,5 +46,12 @@ export class RegisterController {
     @Post('reset-password')
     async resetPassword(@Body() body: ResetPasswordDto) {
         return await this.registerService.resetPassword(body);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Patch('profile/image')
+    @UseInterceptors(FileInterceptor('image'))
+    async uploadImage(@UploadedFile() file: Express.Multer.File, @Req() req) {
+        return this.registerService.uploadProfileImage(req.user.id, file);
     }
 }
