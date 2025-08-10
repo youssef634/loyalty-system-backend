@@ -15,19 +15,19 @@ datasource db {
 }
 
 model User {
-  id          Int     @id @default(autoincrement())
-  enName      String
-  arName      String
-  phone       String  @unique
-  email       String  @unique
-  password    String
-  profileImage String?
-  role        Role    @default(USER)
-  points      Int     @default(0)
-  transactions Transaction[]
-  resetPasswordTokens   ResetPasswordToken[]
+  id                  Int                  @id @default(autoincrement())
+  enName              String
+  arName              String
+  phone               String               @unique
+  email               String               @unique
+  password            String
+  profileImage        String?
+  role                Role                 @default(USER)
+  points              Int                  @default(0)
+  transactions        Transaction[]
+  resetPasswordTokens ResetPasswordToken[]
+  myRewards           MyReward[]           // User redeemed rewards
 }
-
 
 model ResetPasswordToken {
   id         Int      @id @default(autoincrement())
@@ -40,20 +40,55 @@ model ResetPasswordToken {
   @@map("resetPasswordToken")
 }
 
+model CafeProduct {
+  id         Int     @id @default(autoincrement())
+  enName     String
+  arName     String
+  image      String?
+  price      Float
+  points     Int
+  type       String  @default("cafe")
+  myRewards  MyReward[]
+}
+
+model RestaurantProduct {
+  id         Int     @id @default(autoincrement())
+  enName     String
+  arName     String
+  image      String?
+  price      Float
+  points     Int
+  type       String  @default("restaurant")
+  myRewards  MyReward[]
+}
 
 model Reward {
-  id         Int    @id @default(autoincrement())
-  name       String
-  costPoints Int
+  id          Int     @id @default(autoincrement())
+  name        String
+  costPoints  Int
   description String?
+}
+
+model MyReward {
+  id         Int     @id @default(autoincrement())
+  userId     Int
+  cafeProductId Int?   // Nullable if product is from restaurant
+  restaurantProductId Int?
+  type       String     // "cafe" or "restaurant"
+  status     String     // "used" or "not used"
+
+  user              User              @relation(fields: [userId], references: [id])
+  cafeProduct       CafeProduct?      @relation(fields: [cafeProductId], references: [id])
+  restaurantProduct RestaurantProduct? @relation(fields: [restaurantProductId], references: [id])
 }
 
 model Transaction {
   id        Int     @id @default(autoincrement())
-  type      String  // earn or redeem
+  type      String  // "earn" or "redeem"
   points    Int
   date      DateTime @default(now())
   userId    Int
+  productId Int?    // Filled only if type = redeem
   user      User     @relation(fields: [userId], references: [id])
 }
 

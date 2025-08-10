@@ -1,7 +1,7 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsPhoneNumber, IsString, Matches, MinLength } from 'class-validator';
-import { Role } from '@prisma/client';
+import { Type } from 'class-transformer';
+import { IsNotEmpty, IsOptional, IsString, IsNumber, Min, Matches } from 'class-validator';
 
-export class CreateUserDto {
+export class CreateCafeProductDto {
   @IsNotEmpty()
   @IsString()
   @Matches(/^[A-Za-z0-9\s]+$/, {
@@ -16,25 +16,24 @@ export class CreateUserDto {
   })
   arName: string;
 
-  @IsString()
-  phone: string;
-
-  @IsEmail()
-  email: string;
-
-  @IsString()
-  @MinLength(6)
-  password: string;
-
   @IsOptional()
-  @IsEnum(Role)
-  role?: Role;
+  @IsString()
+  image?: string;
 
-  @IsOptional()
-  points?: number;
+  @IsNotEmpty()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  price: number;
+
+  @IsNotEmpty()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  points: number;
 }
 
-export class UpdateUserDto {
+export class UpdateCafeProductDto {
   @IsOptional()
   @IsString()
   @Matches(/^[A-Za-z0-9\s]+$/, {
@@ -51,21 +50,17 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsString()
-  phone?: string;
+  image?: string;
 
   @IsOptional()
-  @IsEmail()
-  email?: string;
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  price?: number;
 
   @IsOptional()
-  @IsString()
-  @MinLength(6)
-  password?: string;
-
-  @IsOptional()
-  @IsEnum(Role)
-  role?: Role;
-
-  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   points?: number;
 }

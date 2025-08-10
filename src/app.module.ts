@@ -10,6 +10,7 @@ import { PrismaService } from './prisma/prisma.service/prisma.service';
 import { RegisterModule } from './auth/register/register.module';
 import { JwtStrategy } from './auth/strategy';
 import { UsersModule } from './users/users.module';
+import { CafeProductsModule } from './products/cafe/cafe.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { UsersModule } from './users/users.module';
     PrismaModule,
     RegisterModule,
     UsersModule,
+    CafeProductsModule,
   ],
   controllers: [AppController],
   providers: [AppService, ConfigService, PrismaService, JwtStrategy],
