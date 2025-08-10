@@ -1,8 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
 import * as multer from 'multer';
-import { extname } from 'path';
 import { AuthGuard } from '@nestjs/passport';
 import { CafeProductsService } from './cafe.service';
 import { CreateCafeProductDto, UpdateCafeProductDto } from './dto/cafe.dto';
