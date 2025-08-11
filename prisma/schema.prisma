@@ -24,9 +24,10 @@ model User {
   profileImage        String?
   role                Role                 @default(USER)
   points              Int                  @default(0)
+  qrCode              String?              
   transactions        Transaction[]
   resetPasswordTokens ResetPasswordToken[]
-  myRewards           MyReward[]           // User redeemed rewards
+  myRewards           MyReward[]
 }
 
 model ResetPasswordToken {
