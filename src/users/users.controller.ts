@@ -83,4 +83,13 @@ export class UsersController {
     ) {
         return this.usersService.scanQr(req.user.id, file);
     }
+
+    @Post('add-points/:id')
+    addPoints(
+        @Request() req,
+        @Param('id') id: string,
+        @Body('points') points: number
+    ) {
+        return this.usersService.addPoints(req.user.id, Number(id), points);
+    }
 }

@@ -97,9 +97,9 @@ export class UsersService {
                 .toBuffer({ resolveWithObject: true });
 
             console.log('Image loaded successfully. Size:', image.info.width, 'x', image.info.height);
-            
+
             const { width, height } = image.info;
-            
+
             // Convert the image data to the format jsQR expects
             const imageData = new Uint8ClampedArray(image.data);
             console.log('Image data converted to array. Length:', imageData.length);
@@ -140,18 +140,17 @@ export class UsersService {
             if (fs.existsSync(file.path)) {
                 fs.unlinkSync(file.path);
             }
-            
+
             console.error('Error processing QR code:', error);
-            
+
             if (error instanceof BadRequestException) {
                 throw error;
             }
-            
+
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             throw new BadRequestException(`Failed to process QR code: ${errorMessage}`);
         }
     }
-
 
     async getAllUsers(
         currentUserId: number,
@@ -283,5 +282,39 @@ export class UsersService {
                 qrCode: true
             }
         });
+    }
+
+    async addPoints(currentUserId: number, userId: number, points: number) {
+        await this.checkAdmin(currentUserId);
+
+        // Ensure number type
+        const pointsToAdd = Number(points);
+        if (isNaN(pointsToAdd) || pointsToAdd <= 0) {
+            throw new BadRequestException('Points must be a positive number');
+        }
+
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new NotFoundException('User not found');
+
+        const updatedUser = await this.prisma.user.update({
+            where: { id: userId },
+            data: { points: user.points + pointsToAdd },
+            select: {
+                id: true,
+                enName: true,
+                arName: true,
+                email: true,
+                phone: true,
+                role: true,
+                points: true,
+                profileImage: true,
+                qrCode: true
+            }
+        });
+
+        return {
+            message: `Added ${pointsToAdd} points to user successfully`,
+            user: updatedUser
+        };
     }
 }
