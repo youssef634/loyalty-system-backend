@@ -46,4 +46,12 @@ export class UsersController {
     updateUser(@Request() req, @Param('id') id: string, @Body() data: UpdateUserDto) {
         return this.usersService.updateUser(req.user.id, Number(id), data);
     }
+
+    @Post('scan-qr')
+    scanQr(
+        @Req() req,
+        @Body() body: { qrData: { id: number; email: string } }
+    ) {
+        return this.usersService.scanQr(req.user.id, body.qrData);
+    }
 }

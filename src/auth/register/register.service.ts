@@ -13,6 +13,7 @@ import * as path from 'path';
 import { ResetPasswordDto, ResetPasswordRequestDto } from './dto/reset-password.dto';
 import { LoginDto, RegisterDto, UpdateNameDto, UpdatePasswordDto } from './dto/register.dto';
 import * as dotenv from 'dotenv';
+import * as QRCode from 'qrcode';
 
 dotenv.config();
 
@@ -22,6 +23,25 @@ export class RegisterService {
     private prisma: PrismaService,
     private readonly jwt: JwtService,
   ) { }
+
+  private getQrUploadPath() {
+    const uploadDir = path.join(process.cwd(), 'uploads', 'qrcodes');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    return uploadDir;
+  }
+
+  private async generateUserQrPng(userId: number, email: string): Promise<string> {
+    const uploadDir = this.getQrUploadPath();
+    const fileName = `${email}.png`;
+    const filePath = path.join(uploadDir, fileName);
+
+    const qrPayload = JSON.stringify({ id: userId, email });
+    await QRCode.toFile(filePath, qrPayload);
+
+    return `http://localhost:3000/uploads/qrcodes/${fileName}`;
+  }
 
   // Register New User
   async signUp(data: RegisterDto) {
@@ -44,14 +64,22 @@ export class RegisterService {
       },
     });
 
+    // Generate QR code and update the user
+    const qrCodeUrl = await this.generateUserQrPng(newUser.id, newUser.email);
+    const updatedUser = await this.prisma.user.update({
+      where: { id: newUser.id },
+      data: { qrCode: qrCodeUrl }
+    });
+
     return {
       message: 'User registered successfully',
       user: {
-        id: newUser.id,
-        enName: newUser.enName,
-        arName: newUser.arName,
-        email: newUser.email,
-        phone: newUser.phone,
+        id: updatedUser.id,
+        enName: updatedUser.enName,
+        arName: updatedUser.arName,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        qrCode: updatedUser.qrCode,
       },
     };
   }
@@ -76,6 +104,7 @@ export class RegisterService {
         email: user.email,
         phone: user.phone,
         profileImage: user.profileImage,
+        qrCode: user.qrCode,
       },
     };
   }

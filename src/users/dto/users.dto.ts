@@ -68,4 +68,8 @@ export class UpdateUserDto {
 
   @IsOptional()
   points?: number;
+
+  @IsOptional()
+  @IsString()
+  qrCode?: string;
 }
