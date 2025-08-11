@@ -58,7 +58,7 @@ export class UsersService {
                 email: data.email,
                 password: hashedPassword,
                 role: data.role || 'USER',
-                points: data.points || 0,
+                points: Number(data.points) || 0,
             },
         });
 
@@ -240,6 +240,11 @@ export class UsersService {
 
         if (data.password) {
             updateData.password = await bcrypt.hash(data.password, 10);
+        }
+
+        // Convert points to number if provided
+        if (updateData.points) {
+            updateData.points = Number(updateData.points);
         }
 
         // If email changes → regenerate QR code
