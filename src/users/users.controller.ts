@@ -1,7 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards, Request, Query, Req, } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards, Request, Query, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto/users.dto';
+import { ScanQrDto } from './dto/scan-qr.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import * as fs from 'fs';
 
 @Controller('users')
 @UseGuards(AuthGuard('jwt'))
@@ -48,10 +53,34 @@ export class UsersController {
     }
 
     @Post('scan-qr')
-    scanQr(
+    @UseInterceptors(FileInterceptor('qrImage', {
+        storage: diskStorage({
+            destination: (req, file, cb) => {
+                const uploadDir = './uploads/qrcodes';
+                // Create directory if it doesn't exist
+                if (!fs.existsSync(uploadDir)) {
+                    fs.mkdirSync(uploadDir, { recursive: true });
+                }
+                cb(null, uploadDir);
+            },
+            filename: (req, file, cb) => {
+                const randomName = Array(32).fill(null)
+                    .map(() => Math.round(Math.random() * 16).toString(16))
+                    .join('');
+                return cb(null, `${randomName}${extname(file.originalname)}`);
+            }
+        }),
+        fileFilter: (req, file, cb) => {
+            if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+                return cb(new Error('Only image files are allowed!'), false);
+            }
+            cb(null, true);
+        }
+    }))
+    async scanQr(
         @Req() req,
-        @Body() body: { qrData: { id: number; email: string } }
+        @UploadedFile() file: Express.Multer.File
     ) {
-        return this.usersService.scanQr(req.user.id, body.qrData);
+        return this.usersService.scanQr(req.user.id, file);
     }
 }
