@@ -292,7 +292,6 @@ export class UsersService {
     async addPoints(currentUserId: number, userId: number, points: number) {
         await this.checkAdmin(currentUserId);
 
-        // Ensure number type
         const pointsToAdd = Number(points);
         if (isNaN(pointsToAdd) || pointsToAdd <= 0) {
             throw new BadRequestException('Points must be a positive number');
@@ -301,6 +300,7 @@ export class UsersService {
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user) throw new NotFoundException('User not found');
 
+        // Update points
         const updatedUser = await this.prisma.user.update({
             where: { id: userId },
             data: { points: user.points + pointsToAdd },
@@ -317,9 +317,33 @@ export class UsersService {
             }
         });
 
+        // Add transaction record
+        await this.prisma.transaction.create({
+            data: {
+                type: 'earn',
+                points: pointsToAdd,
+                userId: userId
+            }
+        });
+
         return {
             message: `Added ${pointsToAdd} points to user successfully`,
             user: updatedUser
         };
+    }
+
+    async getAllUsersForExport(currentUserId: number) {
+        await this.checkAdmin(currentUserId);
+        return this.prisma.user.findMany({
+            select: {
+                id: true,
+                enName: true,
+                arName: true,
+                email: true,
+                phone: true,
+                role: true,
+                points: true
+            }
+        });
     }
 }

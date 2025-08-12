@@ -50,6 +50,7 @@ model CafeProduct {
   points     Int
   type       String  @default("cafe")
   myRewards  MyReward[]
+  transactions        Transaction[]
 }
 
 model RestaurantProduct {
@@ -61,6 +62,7 @@ model RestaurantProduct {
   points     Int
   type       String  @default("restaurant")
   myRewards  MyReward[]
+  transactions        Transaction[]
 }
 
 model Reward {
@@ -89,7 +91,10 @@ model Transaction {
   points    Int
   date      DateTime @default(now())
   userId    Int
-  productId Int?    // Filled only if type = redeem
+  cafeProductId Int?   
+  restaurantProductId Int?    
+  cafeProduct       CafeProduct?      @relation(fields: [cafeProductId], references: [id])
+  restaurantProduct RestaurantProduct? @relation(fields: [restaurantProductId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
 }
 
