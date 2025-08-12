@@ -20,13 +20,20 @@ export class TransactionService {
             type?: string;
             pointsMin?: number;
             pointsMax?: number;
-            date?: string; // YYYY-MM-DD
+            fromDate?: string,
+            toDate?: string,
             userId?: number;
             cafeProductId?: number;
             restaurantProductId?: number;
         }
     ) {
         await this.checkAdmin(currentUserId);
+
+        const toUTC = (dateStr: string) => {
+            const date = new Date(dateStr);
+            // Convert local time to UTC
+            return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        };
 
         const limit = Number(process.env.TAKE);
         const filters: any = {};
@@ -38,12 +45,20 @@ export class TransactionService {
             if (searchFilters.pointsMin !== undefined) filters.points.gte = searchFilters.pointsMin;
             if (searchFilters.pointsMax !== undefined) filters.points.lte = searchFilters.pointsMax;
         }
-        if (searchFilters?.date) {
-            const startDate = new Date(searchFilters.date);
-            const endDate = new Date(searchFilters.date);
-            endDate.setDate(endDate.getDate() + 1);
-            filters.date = { gte: startDate, lt: endDate };
+
+        if (searchFilters?.fromDate || searchFilters?.toDate) {
+            const filtersDate: any = {};
+
+            if (searchFilters.fromDate) {
+                filtersDate.gte = toUTC(searchFilters.fromDate);
+            }
+            if (searchFilters.toDate) {
+                filtersDate.lte = toUTC(searchFilters.toDate);
+            }
+
+            filters.date = filtersDate;
         }
+
         if (searchFilters?.userId) filters.userId = searchFilters.userId;
         if (searchFilters?.cafeProductId) filters.cafeProductId = searchFilters.cafeProductId;
         if (searchFilters?.restaurantProductId) filters.restaurantProductId = searchFilters.restaurantProductId;
