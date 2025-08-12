@@ -12,6 +12,7 @@ import { JwtStrategy } from './auth/strategy';
 import { UsersModule } from './users/users.module';
 import { CafeProductsModule } from './products/cafe/cafe.module';
 import { RestaurantProductsModule } from './products/restaurant/restaurant.module';
+import { TransactionModule } from './transaction/transaction.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { RestaurantProductsModule } from './products/restaurant/restaurant.modul
     UsersModule,
     CafeProductsModule,
     RestaurantProductsModule,
+    TransactionModule,
   ],
   controllers: [AppController],
   providers: [AppService, ConfigService, PrismaService, JwtStrategy],

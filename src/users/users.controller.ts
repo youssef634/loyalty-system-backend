@@ -131,7 +131,7 @@ export class UsersController {
             const doc = new PDFDocument({ margin: 10, size: 'A4' });
 
             // Load custom fonts
-            const arabicFontPath = path.join(process.cwd(), 'fonts', 'Amiri-Regular.ttf'); // Arabic font
+            const arabicFontPath = path.join(process.cwd(), 'fonts', 'Amiri-Bold.ttf'); // Arabic font
             const englishFontPath = path.join(process.cwd(), 'fonts', 'ARIAL.ttf'); // English font
             doc.registerFont('Arabic', arabicFontPath);
             doc.registerFont('English', englishFontPath);
@@ -192,14 +192,13 @@ export class UsersController {
                 row.forEach((cell, i) => {
                     if (typeof cell === 'object') {
                         if (cell.font === 'Arabic') {
-                            // Align Arabic text to the right
                             doc.font(cell.font).text(
                                 cell.text,
                                 x,
                                 y + 7,
                                 {
                                     width: colWidths[i],
-                                    align: 'right' // Align text to the right side
+                                    align: 'center' 
                                 }
                             );
                         } else {
