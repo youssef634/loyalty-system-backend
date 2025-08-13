@@ -3,6 +3,7 @@ import { TransactionService } from './transaction.service';
 import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { format } from '@fast-csv/format';
+import { limit255 } from 'jimp';
 
 @Controller('transactions')
 @UseGuards(AuthGuard('jwt'))
@@ -13,6 +14,7 @@ export class TransactionController {
     getTransactions(
         @Param('page') page: number,
         @Request() req,
+        @Query('limit') limit?: number,
         @Query('id') id?: number,
         @Query('type') type?: string,
         @Query('pointsMin') pointsMin?: number,
@@ -24,6 +26,7 @@ export class TransactionController {
         @Query('restaurantProductId') restaurantProductId?: number,
     ) {
         return this.transactionService.getTransactions(req.user.id, Number(page), {
+            limit: limit ? Number(limit) : undefined,
             id: id ? Number(id) : undefined,
             type,
             pointsMin: pointsMin ? Number(pointsMin) : undefined,

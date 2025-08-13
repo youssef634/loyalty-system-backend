@@ -16,12 +16,13 @@ export class TransactionService {
         currentUserId: number,
         page: number = 1,
         searchFilters?: {
+            limit?: number;
             id?: number;
             type?: string;
             pointsMin?: number;
             pointsMax?: number;
-            fromDate?: string,
-            toDate?: string,
+            fromDate?: string;
+            toDate?: string;
             userId?: number;
             cafeProductId?: number;
             restaurantProductId?: number;
@@ -29,13 +30,8 @@ export class TransactionService {
     ) {
         await this.checkAdmin(currentUserId);
 
-        const toUTC = (dateStr: string) => {
-            const date = new Date(dateStr);
-            // Convert local time to UTC
-            return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-        };
-
-        const limit = Number(process.env.TAKE);
+        // Use limit from query or default to 10
+        const limit = searchFilters?.limit && searchFilters.limit > 0 ? searchFilters.limit : 10;
         const filters: any = {};
 
         if (searchFilters?.id) filters.id = searchFilters.id;
@@ -46,14 +42,16 @@ export class TransactionService {
             if (searchFilters.pointsMax !== undefined) filters.points.lte = searchFilters.pointsMax;
         }
 
+        // Date filter (date-only range)
         if (searchFilters?.fromDate || searchFilters?.toDate) {
             const filtersDate: any = {};
 
             if (searchFilters.fromDate) {
-                filtersDate.gte = toUTC(searchFilters.fromDate);
+                filtersDate.gte = new Date(searchFilters.fromDate + "T00:00:00");
             }
             if (searchFilters.toDate) {
-                filtersDate.lte = toUTC(searchFilters.toDate);
+                // End of day for toDate
+                filtersDate.lte = new Date(searchFilters.toDate + "T23:59:59");
             }
 
             filters.date = filtersDate;
