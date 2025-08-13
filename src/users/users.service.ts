@@ -331,19 +331,4 @@ export class UsersService {
             user: updatedUser
         };
     }
-
-    async getAllUsersForExport(currentUserId: number) {
-        await this.checkAdmin(currentUserId);
-        return this.prisma.user.findMany({
-            select: {
-                id: true,
-                enName: true,
-                arName: true,
-                email: true,
-                phone: true,
-                role: true,
-                points: true
-            }
-        });
-    }
 }

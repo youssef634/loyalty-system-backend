@@ -97,36 +97,4 @@ export class TransactionService {
 
         return this.prisma.transaction.delete({ where: { id: transactionId } });
     }
-
-    async getAllTransactionsForExport(currentUserId: number) {
-        await this.checkAdmin(currentUserId);
-
-        return this.prisma.transaction.findMany({
-            select: {
-                id: true,
-                type: true,
-                points: true,
-                date: true,
-                user: {
-                    select: {
-                        enName: true,
-                        arName: true,
-                        email: true
-                    }
-                },
-                cafeProduct: {
-                    select: {
-                        enName: true,
-                        arName: true
-                    }
-                },
-                restaurantProduct: {
-                    select: {
-                        enName: true,
-                        arName: true
-                    }
-                }
-            }
-        });
-    }
 }
