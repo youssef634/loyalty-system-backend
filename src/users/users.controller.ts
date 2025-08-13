@@ -19,6 +19,7 @@ export class UsersController {
     getUsers(
         @Param("page") page: number,
         @Req() req,
+        @Query('limit') limit?: number,
         @Query('id') id?: number,
         @Query('enName') enName?: string,
         @Query('arName') arName?: string,
@@ -30,6 +31,7 @@ export class UsersController {
             Number(page) || 1,
             {
                 id: id ? Number(id) : undefined,
+                limit: limit ? Number(limit) : undefined,
                 enName: enName || undefined,
                 arName: arName || undefined,
                 email: email || undefined,

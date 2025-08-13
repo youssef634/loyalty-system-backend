@@ -156,6 +156,7 @@ export class UsersService {
         currentUserId: number,
         page: number = 1,
         searchFilters?: {
+            limit?: number;
             id?: number;
             enName?: string;
             arName?: string;
@@ -165,7 +166,7 @@ export class UsersService {
     ) {
         await this.checkAdmin(currentUserId);
 
-        const limit = Number(process.env.TAKE);
+        const limit = searchFilters?.limit && searchFilters.limit > 0 ? searchFilters.limit : 10;
         const filters: any = {};
 
         if (searchFilters?.id) filters.id = searchFilters.id;
