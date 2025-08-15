@@ -88,7 +88,7 @@ model MyReward {
 model Transaction {
   id        Int     @id @default(autoincrement())
   type      String  // "earn" or "redeem"
-  currency  String  @default("USD")
+  currency  Json  
   points    Int
   date      DateTime @default(now())
   userId    Int
@@ -101,10 +101,11 @@ model Transaction {
 
 model Settings {
   id                  Int     @id @default(autoincrement())
-  timezone            String  @default("UTC") // e.g., "Africa/Cairo"
-  currency            String  @default("USD")
-  pointsPerDollar     Int     @default(10) // points per USD
-  pointsPerIQD        Int     @default(1) // points per Iraqi dinar
+  timezone            String  @default("UTC")
+  enCurrency          String
+  arCurrency          String
+  pointsPerDollar     Int     @default(10)
+  pointsPerIQD        Int     @default(1) 
   updatedAt           DateTime @updatedAt
 }
 
