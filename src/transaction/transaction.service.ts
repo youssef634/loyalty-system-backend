@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service/prisma.service';
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class TransactionService {
@@ -30,6 +31,10 @@ export class TransactionService {
     ) {
         await this.checkAdmin(currentUserId);
 
+        // Get timezone from settings (fallback UTC)
+        const settings = await this.prisma.settings.findFirst();
+        const timezone = settings?.timezone || 'UTC';
+
         // Use limit from query or default to 10
         const limit = searchFilters?.limit && searchFilters.limit > 0 ? searchFilters.limit : 10;
         const filters: any = {};
@@ -47,11 +52,10 @@ export class TransactionService {
             const filtersDate: any = {};
 
             if (searchFilters.fromDate) {
-                filtersDate.gte = new Date(searchFilters.fromDate + "T00:00:00");
+                filtersDate.gte = new Date(searchFilters.fromDate + "T00:00:00Z");
             }
             if (searchFilters.toDate) {
-                // End of day for toDate
-                filtersDate.lte = new Date(searchFilters.toDate + "T23:59:59");
+                filtersDate.lte = new Date(searchFilters.toDate + "T23:59:59Z");
             }
 
             filters.date = filtersDate;
@@ -74,16 +78,23 @@ export class TransactionService {
             orderBy: { date: 'desc' },
             include: {
                 user: { select: { id: true, enName: true, arName: true, email: true } },
-                cafeProduct: true,
-                restaurantProduct: true,
             },
         });
+
+        // Add formatted date according to timezone
+        const formattedTransactions = transactions.map(tx => ({
+            ...tx,
+            formattedDate: DateTime
+                .fromJSDate(tx.date, { zone: 'utc' })
+                .setZone(timezone)
+                .toFormat('MMM dd, yyyy, hh:mm a')
+        }));
 
         return {
             total,
             totalPages,
             currentPage: page,
-            transactions,
+            transactions: formattedTransactions,
         };
     }
 

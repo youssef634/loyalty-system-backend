@@ -98,6 +98,14 @@ model Transaction {
   user      User     @relation(fields: [userId], references: [id])
 }
 
+model Settings {
+  id                  Int     @id @default(autoincrement())
+  timezone            String  @default("UTC") // e.g., "Africa/Cairo"
+  pointsPerDollar     Int     @default(10) // points per USD
+  pointsPerIQD        Int     @default(1) // points per Iraqi dinar
+  updatedAt           DateTime @updatedAt
+}
+
 enum Role {
   ADMIN
   USER
