@@ -20,19 +20,21 @@ export class SettingsService {
     async updateSettings(currentUserId: number, body: any) {
         await this.checkAdmin(currentUserId);
 
-        const { timezone, currency , pointsPerDollar, pointsPerIQD } = body;
+        const { timezone, enCurrency , arCurrency , pointsPerDollar, pointsPerIQD } = body;
 
         return this.prisma.settings.upsert({
             where: { id: 1 }, 
             update: {
                 timezone: timezone || undefined,
-                currency: currency || undefined,
+                enCurrency: enCurrency || undefined,
+                arCurrency: arCurrency || undefined,
                 pointsPerDollar: pointsPerDollar || undefined,
                 pointsPerIQD: pointsPerIQD || undefined,
             },
             create: {
                 timezone: timezone || "UTC",
-                currency: currency || "USD",
+                enCurrency: enCurrency || "USD",
+                arCurrency: arCurrency || "الدولار الأمريكي",
                 pointsPerDollar: pointsPerDollar || 10,
                 pointsPerIQD: pointsPerIQD || 1,
             },

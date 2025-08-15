@@ -311,7 +311,7 @@ export class UsersService {
 
         // Determine points per currency
         let pointsPerUnit = 0;
-        const currency = settings.currency;
+        const currency = settings.enCurrency;
         if (currency === 'USD') {
             pointsPerUnit = settings.pointsPerDollar;
         } else if (currency === 'IQD') {
@@ -347,7 +347,10 @@ export class UsersService {
         // Create transaction record
         await this.prisma.transaction.create({
             data: {
-                currency: currency,
+                currency: {
+                    enCurrency: settings.enCurrency,
+                    arCurrency: settings.arCurrency
+                },
                 type: 'earn',
                 points: pointsToAdd,
                 userId: userId,
