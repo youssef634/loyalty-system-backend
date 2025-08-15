@@ -92,13 +92,11 @@ export class UsersController {
         @Request() req,
         @Param('id') id: string,
         @Body('price') price: number,
-        @Body('currency') currency: 'USD' | 'IQD',
     ) {
         return this.usersService.addPoints(
             req.user.id,
             Number(id),
-            Number(price),
-            currency
+            Number(price)
         );
     }
 }
