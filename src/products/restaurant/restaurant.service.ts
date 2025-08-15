@@ -11,7 +11,7 @@ import * as path from 'path';
 
 @Injectable()
 export class RestaurantProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   private async checkAdmin(userId: number) {
     const user = await this.prisma.user.findUnique({
@@ -34,17 +34,16 @@ export class RestaurantProductsService {
   async getProducts(
     page: number = 1,
     filters?: {
+      limit?: number;
       id?: number;
       enName?: string;
       arName?: string;
-      minPrice?: number;
-      maxPrice?: number;
       minPoints?: number;
       maxPoints?: number;
     },
   ) {
-    const limit = Number(process.env.TAKE);
-
+    
+    const limit = filters?.limit && filters.limit > 0 ? filters.limit : 10;
     const where: any = {};
 
     if (filters?.id) where.id = filters.id;
@@ -52,14 +51,6 @@ export class RestaurantProductsService {
       where.enName = { contains: filters.enName, mode: 'insensitive' };
     if (filters?.arName)
       where.arName = { contains: filters.arName, mode: 'insensitive' };
-
-    if (filters?.minPrice !== undefined || filters?.maxPrice !== undefined) {
-      where.price = {};
-      if (filters.minPrice !== undefined)
-        where.price.gte = Number(filters.minPrice);
-      if (filters.maxPrice !== undefined)
-        where.price.lte = Number(filters.maxPrice);
-    }
 
     if (filters?.minPoints !== undefined || filters?.maxPoints !== undefined) {
       where.points = {};

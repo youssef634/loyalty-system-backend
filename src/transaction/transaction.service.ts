@@ -29,7 +29,10 @@ export class TransactionService {
             restaurantProductId?: number;
         }
     ) {
-        await this.checkAdmin(currentUserId);
+        const user = await this.prisma.user.findUnique({ where: { id: currentUserId } });
+        if (!user) throw new ForbiddenException('User not found');
+
+        const isAdmin = user.role === 'ADMIN';
 
         // Get timezone from settings (fallback UTC)
         const settings = await this.prisma.settings.findFirst();
@@ -50,20 +53,23 @@ export class TransactionService {
         // Date filter (date-only range)
         if (searchFilters?.fromDate || searchFilters?.toDate) {
             const filtersDate: any = {};
-
             if (searchFilters.fromDate) {
                 filtersDate.gte = new Date(searchFilters.fromDate + "T00:00:00Z");
             }
             if (searchFilters.toDate) {
                 filtersDate.lte = new Date(searchFilters.toDate + "T23:59:59Z");
             }
-
             filters.date = filtersDate;
         }
 
         if (searchFilters?.userId) filters.userId = searchFilters.userId;
         if (searchFilters?.cafeProductId) filters.cafeProductId = searchFilters.cafeProductId;
         if (searchFilters?.restaurantProductId) filters.restaurantProductId = searchFilters.restaurantProductId;
+
+        // If not admin, restrict to only current user's transactions
+        if (!isAdmin) {
+            filters.userId = currentUserId;
+        }
 
         const total = await this.prisma.transaction.count({ where: filters });
         const totalPages = Math.ceil(total / limit);

@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import sharp from 'sharp';
 import jsQR from 'jsqr';
+import { IsCurrency } from 'class-validator';
 
 @Injectable()
 export class UsersService {
@@ -309,7 +310,16 @@ export class UsersService {
         }
 
         // Determine points per currency
-        let pointsPerUnit = 10;
+        let pointsPerUnit = 0;
+        const currency = settings.currency;
+        if (currency === 'USD') {
+            pointsPerUnit = settings.pointsPerDollar;
+        } else if (currency === 'IQD') {
+            pointsPerUnit = settings.pointsPerIQD;
+        } else {
+            throw new BadRequestException('Invalid currency. Use USD or IQD.');
+        }
+
         // Calculate points to add
         const pointsToAdd = amount * pointsPerUnit;
 
@@ -337,6 +347,7 @@ export class UsersService {
         // Create transaction record
         await this.prisma.transaction.create({
             data: {
+                currency: currency,
                 type: 'earn',
                 points: pointsToAdd,
                 userId: userId,

@@ -13,20 +13,18 @@ export class RestaurantProductsController {
     @Get(":page")
     getProducts(
         @Param('page') page: number,
+        @Query('limit') limit?: number,
         @Query('id') id?: number,
         @Query('enName') enName?: string,
         @Query('arName') arName?: string,
-        @Query('minPrice') minPrice?: number,
-        @Query('maxPrice') maxPrice?: number,
         @Query('minPoints') minPoints?: number,
         @Query('maxPoints') maxPoints?: number,
     ) {
         return this.restaurantProductsService.getProducts(Number(page), {
+            limit: limit ? Number(limit) : undefined,
             id: id ? Number(id) : undefined,
             enName,
             arName,
-            minPrice: minPrice ? Number(minPrice) : undefined,
-            maxPrice: maxPrice ? Number(maxPrice) : undefined,
             minPoints: minPoints ? Number(minPoints) : undefined,
             maxPoints: maxPoints ? Number(maxPoints) : undefined,
         });

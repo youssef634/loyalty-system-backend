@@ -14,53 +14,28 @@ export class SettingsService {
 
     async getSettings(userId: number) {
         await this.checkAdmin(userId);
-        const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
-        return {
-            ...settings,
-            currency: settings.pointsPerDollar > 0 ? 'USD' : 'IQD'
-        };
+        return this.prisma.settings.findUnique({ where: { id: 1 } });
     }
 
-    async updateSettings(currentUserId: number, body: { timezone?: string; pointsPerDollar?: number; pointsPerIQD?: number; currency?: 'USD' | 'IQD' }) {
-        await this.checkAdmin(currentUserId); // ensure only admins can do this
+    async updateSettings(currentUserId: number, body: any) {
+        await this.checkAdmin(currentUserId);
 
-        const { timezone, pointsPerDollar, pointsPerIQD, currency } = body;
-
-        // Set points based on currency and provided values
-        let updatedPointsPerDollar = pointsPerDollar;
-        let updatedPointsPerIQD = pointsPerIQD;
-
-        if (currency === 'USD') {
-            updatedPointsPerDollar = pointsPerDollar || updatedPointsPerDollar;
-            updatedPointsPerIQD = 0;
-        } else if (currency === 'IQD') {
-            updatedPointsPerDollar = 0;
-            updatedPointsPerIQD = pointsPerIQD || updatedPointsPerIQD;
-        }
+        const { timezone, currency , pointsPerDollar, pointsPerIQD } = body;
 
         return this.prisma.settings.upsert({
-            where: { id: 1 }, // assuming we only ever have one settings row
+            where: { id: 1 }, 
             update: {
                 timezone: timezone || undefined,
-                pointsPerDollar: updatedPointsPerDollar !== undefined ? parseInt(String(updatedPointsPerDollar)) : undefined,
-                pointsPerIQD: updatedPointsPerIQD !== undefined ? parseInt(String(updatedPointsPerIQD)) : undefined,
+                currency: currency || undefined,
+                pointsPerDollar: pointsPerDollar || undefined,
+                pointsPerIQD: pointsPerIQD || undefined,
             },
             create: {
                 timezone: timezone || "UTC",
-                pointsPerDollar: updatedPointsPerDollar !== undefined ? parseInt(String(updatedPointsPerDollar)) : 10,
-                pointsPerIQD: updatedPointsPerIQD !== undefined ? parseInt(String(updatedPointsPerIQD)) : 1,
+                currency: currency || "USD",
+                pointsPerDollar: pointsPerDollar || 10,
+                pointsPerIQD: pointsPerIQD || 1,
             },
         });
-    }
-
-    async convertPoints(amount: number, currency: 'USD' | 'IQD') {
-        const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
-        if (!settings) throw new Error('Settings not configured');
-
-        if (currency === 'USD') {
-            return amount * settings.pointsPerDollar;
-        } else {
-            return amount * settings.pointsPerIQD;
-        }
     }
 }
