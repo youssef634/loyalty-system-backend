@@ -290,18 +290,43 @@ export class UsersService {
         });
     }
 
-    async addPoints(currentUserId: number, userId: number, points: number) {
+    async addPoints(
+        currentUserId: number,
+        userId: number,
+        price: number,
+        currency: 'USD' | 'IQD'
+    ) {
         await this.checkAdmin(currentUserId);
 
-        const pointsToAdd = Number(points);
-        if (isNaN(pointsToAdd) || pointsToAdd <= 0) {
-            throw new BadRequestException('Points must be a positive number');
+        const amount = Number(price);
+        if (isNaN(amount) || amount <= 0) {
+            throw new BadRequestException('Price must be a positive number');
         }
 
+        // Fetch settings to get conversion rates
+        const settings = await this.prisma.settings.findFirst();
+        if (!settings) {
+            throw new NotFoundException('Settings not found. Please configure settings first.');
+        }
+
+        // Determine points per currency
+        let pointsPerUnit = 0;
+        if (currency === 'USD') {
+            pointsPerUnit = settings.pointsPerDollar;
+        } else if (currency === 'IQD') {
+            pointsPerUnit = settings.pointsPerIQD;
+        } else {
+            throw new BadRequestException('Invalid currency. Use USD or IQD.');
+        }
+
+        // Calculate points to add
+        const pointsToAdd = amount * pointsPerUnit;
+
+        // Find user
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user) throw new NotFoundException('User not found');
 
-        // Update points
+        // Update user points
         const updatedUser = await this.prisma.user.update({
             where: { id: userId },
             data: { points: user.points + pointsToAdd },
@@ -314,22 +339,22 @@ export class UsersService {
                 role: true,
                 points: true,
                 profileImage: true,
-                qrCode: true
-            }
+                qrCode: true,
+            },
         });
 
-        // Add transaction record
+        // Create transaction record
         await this.prisma.transaction.create({
             data: {
                 type: 'earn',
                 points: pointsToAdd,
-                userId: userId
-            }
+                userId: userId,
+            },
         });
 
         return {
             message: `Added ${pointsToAdd} points to user successfully`,
-            user: updatedUser
+            user: updatedUser,
         };
     }
 }

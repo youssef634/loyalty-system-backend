@@ -13,6 +13,7 @@ import { UsersModule } from './users/users.module';
 import { CafeProductsModule } from './products/cafe/cafe.module';
 import { RestaurantProductsModule } from './products/restaurant/restaurant.module';
 import { TransactionModule } from './transaction/transaction.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { TransactionModule } from './transaction/transaction.module';
     CafeProductsModule,
     RestaurantProductsModule,
     TransactionModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService, ConfigService, PrismaService, JwtStrategy],
