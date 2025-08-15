@@ -13,15 +13,14 @@ export class CafeProductsController {
     @Get(":page")
     getProducts(
         @Param("page") page: number,
+        @Query('limit') limit?: number,
         @Query('id') id?: number,
         @Query('enName') enName?: string,
         @Query('arName') arName?: string,
-        @Query('minPrice') minPrice?: number,
-        @Query('maxPrice') maxPrice?: number,
         @Query('minPoints') minPoints?: number,
         @Query('maxPoints') maxPoints?: number,
     ) {
-        return this.service.getProducts(page, { id, enName, arName, minPrice, maxPrice, minPoints, maxPoints });
+        return this.service.getProducts(page, {limit, id, enName, arName, minPoints, maxPoints });
     }
 
     @Post()
