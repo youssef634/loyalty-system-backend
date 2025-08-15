@@ -294,7 +294,6 @@ export class UsersService {
     async addPoints(
         currentUserId: number,
         userId: number,
-        currency: 'USD' | 'IQD',
         price: number,
     ) {
         await this.checkAdmin(currentUserId);
