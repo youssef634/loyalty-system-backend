@@ -16,4 +16,5 @@ export class SettingsController {
   updateSettings(@Request() req, @Body() body) {
     return this.settingsService.updateSettings(req.user.id, body);
   }
+  
 }

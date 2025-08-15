@@ -14,25 +14,29 @@ export class SettingsService {
 
     async getSettings(userId: number) {
         await this.checkAdmin(userId);
-        return this.prisma.settings.findUnique({ where: { id: 1 } });
+        const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+        return {
+            ...settings,
+            currency: settings.pointsPerDollar === 1 ? 'USD' : 'IQD'
+        };
     }
 
-    async updateSettings(currentUserId: number, body: any) {
+    async updateSettings(currentUserId: number, body: { timezone?: string; pointsPerDollar?: number; pointsPerIQD?: number; currency?: string }) {
         await this.checkAdmin(currentUserId); // ensure only admins can do this
 
-        const { timezone, pointsPerDollar, pointsPerIQD } = body;
+        const { timezone, pointsPerDollar, pointsPerIQD, currency } = body;
 
         return this.prisma.settings.upsert({
             where: { id: 1 }, // assuming we only ever have one settings row
             update: {
                 timezone: timezone || undefined,
-                pointsPerDollar: pointsPerDollar || undefined,
-                pointsPerIQD: pointsPerIQD || undefined,
+                pointsPerDollar: pointsPerDollar ? parseInt(String(pointsPerDollar)) : undefined,
+                pointsPerIQD: pointsPerIQD ? parseInt(String(pointsPerIQD)) : undefined,
             },
             create: {
                 timezone: timezone || "UTC",
-                pointsPerDollar: pointsPerDollar || 10,
-                pointsPerIQD: pointsPerIQD || 1,
+                pointsPerDollar: pointsPerDollar ? parseInt(String(pointsPerDollar)) : 10,
+                pointsPerIQD: pointsPerIQD ? parseInt(String(pointsPerIQD)) : 1,
             },
         });
     }
