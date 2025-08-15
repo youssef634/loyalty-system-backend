@@ -1,13 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards, Request, Query, Req, UseInterceptors, UploadedFile, Res } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards, Request, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto/users.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import * as fs from 'fs';
-import { Response } from 'express';
-import { format } from '@fast-csv/format';
 
 @Controller('users')
 @UseGuards(AuthGuard('jwt'))
@@ -18,7 +12,7 @@ export class UsersController {
     @Get(":page")
     getUsers(
         @Param("page") page: number,
-        @Req() req,
+        @Request() req,
         @Query('limit') limit?: number,
         @Query('id') id?: number,
         @Query('enName') enName?: string,
@@ -55,37 +49,7 @@ export class UsersController {
         return this.usersService.updateUser(req.user.id, Number(id), data);
     }
 
-    @Post('scan-qr')
-    @UseInterceptors(FileInterceptor('qrImage', {
-        storage: diskStorage({
-            destination: (req, file, cb) => {
-                const uploadDir = './uploads/qrcodes';
-                // Create directory if it doesn't exist
-                if (!fs.existsSync(uploadDir)) {
-                    fs.mkdirSync(uploadDir, { recursive: true });
-                }
-                cb(null, uploadDir);
-            },
-            filename: (req, file, cb) => {
-                const randomName = Array(32).fill(null)
-                    .map(() => Math.round(Math.random() * 16).toString(16))
-                    .join('');
-                return cb(null, `${randomName}${extname(file.originalname)}`);
-            }
-        }),
-        fileFilter: (req, file, cb) => {
-            if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-                return cb(new Error('Only image files are allowed!'), false);
-            }
-            cb(null, true);
-        }
-    }))
-    async scanQr(
-        @Req() req,
-        @UploadedFile() file: Express.Multer.File
-    ) {
-        return this.usersService.scanQr(req.user.id, file);
-    }
+
 
     @Post('add-points/:id')
     addPoints(

@@ -5,9 +5,6 @@ import * as bcrypt from 'bcrypt';
 import * as QRCode from 'qrcode';
 import * as fs from 'fs';
 import * as path from 'path';
-import sharp from 'sharp';
-import jsQR from 'jsqr';
-import { IsCurrency } from 'class-validator';
 
 @Injectable()
 export class UsersService {
@@ -82,76 +79,7 @@ export class UsersService {
         });
     }
 
-    async scanQr(currentUserId: number, file: Express.Multer.File) {
-        await this.checkAdmin(currentUserId);
 
-        if (!file) {
-            throw new BadRequestException('No file uploaded');
-        }
-
-        try {
-            console.log('Reading image from path:', file.path);
-            // Read and process the image using sharp
-            const image = await sharp(file.path)
-                .ensureAlpha()
-                .raw()
-                .toBuffer({ resolveWithObject: true });
-
-            console.log('Image loaded successfully. Size:', image.info.width, 'x', image.info.height);
-
-            const { width, height } = image.info;
-
-            // Convert the image data to the format jsQR expects
-            const imageData = new Uint8ClampedArray(image.data);
-            console.log('Image data converted to array. Length:', imageData.length);
-
-            // Scan for QR code
-            console.log('Attempting to scan QR code...');
-            const qrCode = jsQR(imageData, width, height);
-            console.log('QR scan result:', qrCode ? 'Found QR code' : 'No QR code found');
-
-            // Delete the uploaded file
-            fs.unlinkSync(file.path);
-
-            if (!qrCode) {
-                throw new BadRequestException('No QR code found in image');
-            }
-
-            // Parse the QR code data
-            let qrData;
-            try {
-                qrData = JSON.parse(qrCode.data);
-            } catch {
-                throw new BadRequestException('Invalid QR code format');
-            }
-
-            if (!qrData.id || !qrData.email) {
-                throw new BadRequestException('QR code missing required fields');
-            }
-
-            // Return the user data
-            return {
-                qrData: {
-                    id: qrData.id,
-                    email: qrData.email
-                }
-            };
-        } catch (error) {
-            // Clean up the file in case of error
-            if (fs.existsSync(file.path)) {
-                fs.unlinkSync(file.path);
-            }
-
-            console.error('Error processing QR code:', error);
-
-            if (error instanceof BadRequestException) {
-                throw error;
-            }
-
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            throw new BadRequestException(`Failed to process QR code: ${errorMessage}`);
-        }
-    }
 
     async getAllUsers(
         currentUserId: number,

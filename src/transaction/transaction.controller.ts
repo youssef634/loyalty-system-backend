@@ -19,6 +19,7 @@ export class TransactionController {
         @Query('fromDate')fromDate?: string,
         @Query('toDate')toDate?: string,
         @Query('userId') userId?: number,
+        @Query('email') email?: string,
         @Query('cafeProductId') cafeProductId?: number,
         @Query('restaurantProductId') restaurantProductId?: number,
     ) {
@@ -31,6 +32,7 @@ export class TransactionController {
             fromDate,
             toDate,
             userId: userId ? Number(userId) : undefined,
+            email,
             cafeProductId: cafeProductId ? Number(cafeProductId) : undefined,
             restaurantProductId: restaurantProductId ? Number(restaurantProductId) : undefined,
         });

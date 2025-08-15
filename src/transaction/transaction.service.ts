@@ -25,6 +25,7 @@ export class TransactionService {
             fromDate?: string;
             toDate?: string;
             userId?: number;
+            email?: string;
             cafeProductId?: number;
             restaurantProductId?: number;
         }
@@ -63,6 +64,14 @@ export class TransactionService {
         }
 
         if (searchFilters?.userId) filters.userId = searchFilters.userId;
+        
+        // Email filter - search by user email
+        if (searchFilters?.email) {
+            filters.user = {
+                email: { contains: searchFilters.email, mode: 'insensitive' }
+            };
+        }
+        
         if (searchFilters?.cafeProductId) filters.cafeProductId = searchFilters.cafeProductId;
         if (searchFilters?.restaurantProductId) filters.restaurantProductId = searchFilters.restaurantProductId;
 
