@@ -17,26 +17,38 @@ export class SettingsService {
         const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
         return {
             ...settings,
-            currency: settings.pointsPerDollar === 1 ? 'USD' : 'IQD'
+            currency: settings.pointsPerDollar > 0 ? 'USD' : 'IQD'
         };
     }
 
-    async updateSettings(currentUserId: number, body: { timezone?: string; pointsPerDollar?: number; pointsPerIQD?: number; currency?: string }) {
+    async updateSettings(currentUserId: number, body: { timezone?: string; pointsPerDollar?: number; pointsPerIQD?: number; currency?: 'USD' | 'IQD' }) {
         await this.checkAdmin(currentUserId); // ensure only admins can do this
 
         const { timezone, pointsPerDollar, pointsPerIQD, currency } = body;
+
+        // Set points based on currency and provided values
+        let updatedPointsPerDollar = pointsPerDollar;
+        let updatedPointsPerIQD = pointsPerIQD;
+
+        if (currency === 'USD') {
+            updatedPointsPerDollar = pointsPerDollar || updatedPointsPerDollar;
+            updatedPointsPerIQD = 0;
+        } else if (currency === 'IQD') {
+            updatedPointsPerDollar = 0;
+            updatedPointsPerIQD = pointsPerIQD || updatedPointsPerIQD;
+        }
 
         return this.prisma.settings.upsert({
             where: { id: 1 }, // assuming we only ever have one settings row
             update: {
                 timezone: timezone || undefined,
-                pointsPerDollar: pointsPerDollar ? parseInt(String(pointsPerDollar)) : undefined,
-                pointsPerIQD: pointsPerIQD ? parseInt(String(pointsPerIQD)) : undefined,
+                pointsPerDollar: updatedPointsPerDollar !== undefined ? parseInt(String(updatedPointsPerDollar)) : undefined,
+                pointsPerIQD: updatedPointsPerIQD !== undefined ? parseInt(String(updatedPointsPerIQD)) : undefined,
             },
             create: {
                 timezone: timezone || "UTC",
-                pointsPerDollar: pointsPerDollar ? parseInt(String(pointsPerDollar)) : 10,
-                pointsPerIQD: pointsPerIQD ? parseInt(String(pointsPerIQD)) : 1,
+                pointsPerDollar: updatedPointsPerDollar !== undefined ? parseInt(String(updatedPointsPerDollar)) : 10,
+                pointsPerIQD: updatedPointsPerIQD !== undefined ? parseInt(String(updatedPointsPerIQD)) : 1,
             },
         });
     }
