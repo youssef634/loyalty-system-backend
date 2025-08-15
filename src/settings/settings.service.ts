@@ -15,6 +15,17 @@ export class SettingsService {
     async getSettings(userId: number) {
         await this.checkAdmin(userId);
         const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+        if (!settings) {
+            // Create default settings if none exist
+            return this.prisma.settings.create({
+                data: {
+                    id: 1,
+                    timezone: "UTC",
+                    pointsPerDollar: 10,
+                    pointsPerIQD: 1
+                }
+            });
+        }
         return {
             ...settings,
             currency: settings.pointsPerDollar > 0 ? 'USD' : 'IQD'
@@ -55,7 +66,22 @@ export class SettingsService {
 
     async convertPoints(amount: number, currency: 'USD' | 'IQD') {
         const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
-        if (!settings) throw new Error('Settings not configured');
+        if (!settings) {
+            // Create default settings if none exist
+            const defaultSettings = await this.prisma.settings.create({
+                data: {
+                    id: 1,
+                    timezone: "UTC",
+                    pointsPerDollar: 10,
+                    pointsPerIQD: 1
+                }
+            });
+            if (currency === 'USD') {
+                return amount * defaultSettings.pointsPerDollar;
+            } else {
+                return amount * defaultSettings.pointsPerIQD;
+            }
+        }
 
         if (currency === 'USD') {
             return amount * settings.pointsPerDollar;

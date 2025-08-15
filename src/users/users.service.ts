@@ -293,6 +293,7 @@ export class UsersService {
     async addPoints(
         currentUserId: number,
         userId: number,
+        currency: 'USD' | 'IQD',
         price: number,
     ) {
         await this.checkAdmin(currentUserId);
@@ -309,7 +310,15 @@ export class UsersService {
         }
 
         // Determine points per currency
-        let pointsPerUnit = 10;
+        let pointsPerUnit = 0;
+        if (currency === 'USD') {
+            pointsPerUnit = settings.pointsPerDollar;
+        } else if (currency === 'IQD') {
+            pointsPerUnit = settings.pointsPerIQD;
+        } else {
+            throw new BadRequestException('Invalid currency. Use USD or IQD.');
+        }
+
         // Calculate points to add
         const pointsToAdd = amount * pointsPerUnit;
 
