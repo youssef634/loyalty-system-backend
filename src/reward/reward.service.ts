@@ -79,8 +79,8 @@ export class RewardService {
             orderBy: { date: 'desc' },
             include: {
                 user: isAdmin ? { select: { enName: true, arName: true } } : false,
-                cafeProduct: { select: { enName: true, arName: true } },
-                restaurantProduct: { select: { enName: true, arName: true } },
+                cafeProduct: { select: { enName: true, arName: true, image: true } },
+                restaurantProduct: { select: { enName: true, arName: true, image: true } },
             },
         });
 
