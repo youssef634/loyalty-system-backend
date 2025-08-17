@@ -14,6 +14,8 @@ import { CafeProductsModule } from './products/cafe/cafe.module';
 import { RestaurantProductsModule } from './products/restaurant/restaurant.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { SettingsModule } from './settings/settings.module';
+import { RedeemModule } from './redeem/redeem.module';
+import { RewardModule } from './reward/reward.module';
 
 @Module({
   imports: [
@@ -42,6 +44,8 @@ import { SettingsModule } from './settings/settings.module';
     RestaurantProductsModule,
     TransactionModule,
     SettingsModule,
+    RedeemModule,
+    RewardModule,
   ],
   controllers: [AppController],
   providers: [AppService, ConfigService, PrismaService, JwtStrategy],

@@ -73,16 +73,19 @@ model Reward {
 }
 
 model MyReward {
-  id         Int     @id @default(autoincrement())
-  userId     Int
-  cafeProductId Int?   // Nullable if product is from restaurant
+  id                  Int     @id @default(autoincrement())
+  userId              Int
+  cafeProductId       Int?
   restaurantProductId Int?
-  type       String     // "cafe" or "restaurant"
-  status     String     // "used" or "not used"
+  points              Int
+  type                String   // "cafe" or "restaurant"
+  status              RewardStatus @default(PENDING)
+  date                DateTime @default(now())
+  note                String?
 
-  user              User              @relation(fields: [userId], references: [id])
-  cafeProduct       CafeProduct?      @relation(fields: [cafeProductId], references: [id])
-  restaurantProduct RestaurantProduct? @relation(fields: [restaurantProductId], references: [id])
+  user                User              @relation(fields: [userId], references: [id])
+  cafeProduct         CafeProduct?      @relation(fields: [cafeProductId], references: [id])
+  restaurantProduct   RestaurantProduct? @relation(fields: [restaurantProductId], references: [id])
 }
 
 model Transaction {
@@ -112,4 +115,10 @@ model Settings {
 enum Role {
   ADMIN
   USER
+}
+
+enum RewardStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
