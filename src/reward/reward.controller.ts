@@ -44,4 +44,21 @@ export class RewardController {
     ) {
         return this.rewardService.rejectReward(req.user.id, id, note);
     }
+
+    @Patch('approve-many')
+    approveRewards(
+        @Request() req,
+        @Body('rewardIds') rewardIds: number[]
+    ) {
+        return this.rewardService.approveRewards(req.user.id, rewardIds);
+    }
+
+    @Patch('reject-many')
+    rejectRewards(
+        @Request() req,
+        @Body('rewardIds') rewardIds: number[],
+        @Body('note') note?: string
+    ) {
+        return this.rewardService.rejectRewards(req.user.id, rewardIds, note);
+    }
 }

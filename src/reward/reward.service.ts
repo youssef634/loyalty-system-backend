@@ -152,4 +152,72 @@ export class RewardService {
             },
         });
     }
+
+    async approveRewards(adminId: number, rewardIds: number[]) {
+        await this.checkAdmin(adminId);
+
+        const results = [];
+        for (const rewardId of rewardIds) {
+            const reward = await this.prisma.myReward.findUnique({ where: { id: rewardId } });
+            if (!reward) {
+                results.push({ rewardId, error: 'Reward not found' });
+                continue;
+            }
+            if (reward.status === RewardStatus.REJECTED) {
+                results.push({ rewardId, error: 'Cannot approve a rejected reward' });
+                continue;
+            }
+            if (reward.status === RewardStatus.APPROVED) {
+                results.push({ rewardId, error: 'Reward is already approved' });
+                continue;
+            }
+            const updated = await this.prisma.myReward.update({
+                where: { id: rewardId },
+                data: {
+                    status: RewardStatus.APPROVED,
+                    date: new Date(),
+                },
+            });
+            results.push({ rewardId, updated });
+        }
+        return results;
+    }
+
+    async rejectRewards(adminId: number, rewardIds: number[], note?: string) {
+        await this.checkAdmin(adminId);
+
+        const results = [];
+        for (const rewardId of rewardIds) {
+            const reward = await this.prisma.myReward.findUnique({
+                where: { id: rewardId },
+                include: { user: true },
+            });
+            if (!reward) {
+                results.push({ rewardId, error: 'Reward not found' });
+                continue;
+            }
+            if (reward.status === RewardStatus.APPROVED) {
+                results.push({ rewardId, error: 'Cannot reject an approved reward' });
+                continue;
+            }
+            if (reward.status === RewardStatus.REJECTED) {
+                results.push({ rewardId, error: 'Reward is already rejected' });
+                continue;
+            }
+            await this.prisma.user.update({
+                where: { id: reward.userId },
+                data: { points: reward.user.points + reward.points },
+            });
+            const updated = await this.prisma.myReward.update({
+                where: { id: rewardId },
+                data: {
+                    status: RewardStatus.REJECTED,
+                    note: note || null,
+                    date: new Date(),
+                },
+            });
+            results.push({ rewardId, updated });
+        }
+        return results;
+    }
 }
