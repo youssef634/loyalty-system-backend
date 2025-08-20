@@ -105,8 +105,7 @@ export class RegisterService {
 
     const { password, ...userData } = user;
     return {
-      ...userData,
-      role: user.role
+      ...userData
     };
   }
 
