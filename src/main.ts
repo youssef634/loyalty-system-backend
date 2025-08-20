@@ -11,10 +11,13 @@ async function bootstrap() {
   dotenv.config();
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {});
 
-  app.enableCors({origin: "https://loyalty-systemm.netlify.app/",
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  app.enableCors({
+    origin: "https://loyalty-systemm.netlify.app",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+    allowedHeaders: ["Content-Type", "Authorization", "lang", "page"],
     credentials: true,
   });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
