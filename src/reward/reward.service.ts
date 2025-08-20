@@ -33,7 +33,7 @@ export class RewardService {
         const isAdmin = user.role === 'ADMIN';
 
         // Get timezone from settings (fallback UTC)
-        const settings = await this.prisma.settings.findFirst();
+        const settings = await this.prisma.settings.findUnique({ where: { userId: currentUserId } });
         const timezone = settings?.timezone || 'UTC';
 
         // Pagination limit (default 10)

@@ -31,10 +31,7 @@ export class RedeemService {
             data: { points: user.points - product.points },
         });
 
-        const settings = await this.prisma.settings.findFirst();
-        if (!settings) {
-            throw new NotFoundException('Settings not found. Please configure settings first.');
-        }
+        const settings = await this.prisma.settings.findUnique({ where: { userId: userId } });
         // Create redeem transaction
         await this.prisma.transaction.create({
             data: {
