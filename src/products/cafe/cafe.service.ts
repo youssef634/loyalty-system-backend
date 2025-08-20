@@ -141,19 +141,6 @@ export class CafeProductsService {
 
     const product = await this.prisma.cafeProduct.findUnique({ where: { id } });
     if (!product) throw new NotFoundException('Product not found');
-    
-    if (product.image) {
-      const imgPath = path.join(
-        process.cwd(),
-        'uploads',
-        'cafe-products',
-        path.basename(product.image),
-      );
-      if (fs.existsSync(imgPath)) {
-        fs.unlinkSync(imgPath);
-      }
-    }
-
     return this.prisma.cafeProduct.delete({ where: { id } });
   }
 }
