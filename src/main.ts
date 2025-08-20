@@ -12,7 +12,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {});
 
   app.enableCors({
-    origin: "https://loyalty-systemm.netlify.app",
+    origin: ["https://loyalty-systemm.netlify.app", "http://localhost:3001"],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
     allowedHeaders: ["Content-Type", "Authorization", "lang", "page"],
     credentials: true,
