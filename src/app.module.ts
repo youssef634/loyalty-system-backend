@@ -37,7 +37,6 @@ import { DashboardModule } from './dashboard/dashboard.module';
       global: true,
     }),
 
-
     PrismaModule,
     RegisterModule,
     UsersModule,
