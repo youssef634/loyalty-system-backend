@@ -31,7 +31,11 @@ export class RedeemService {
             data: { points: user.points - product.points },
         });
 
-        const settings = await this.prisma.settings.findUnique({ where: { userId: userId } });
+        let settings = await this.prisma.settings.findUnique({ where: { userId: userId } });
+        if (!settings) {
+            settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+            if (!settings) throw new NotFoundException('Admin settings not found');
+        }
         // Create redeem transaction
         await this.prisma.transaction.create({
             data: {

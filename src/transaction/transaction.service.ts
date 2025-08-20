@@ -36,7 +36,11 @@ export class TransactionService {
         const isAdmin = user.role === 'ADMIN';
 
         // Get timezone from settings (fallback UTC)
-        const settings = await this.prisma.settings.findUnique({ where: { userId: currentUserId } });
+        let settings = await this.prisma.settings.findUnique({ where: { userId: currentUserId } });
+        if (!settings) {
+            settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+            if (!settings) throw new NotFoundException('Admin settings not found');
+        }
         const timezone = settings?.timezone || 'UTC';
 
         // Use limit from query or default to 10
