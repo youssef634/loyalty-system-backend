@@ -16,6 +16,7 @@ import { TransactionModule } from './transaction/transaction.module';
 import { SettingsModule } from './settings/settings.module';
 import { RedeemModule } from './redeem/redeem.module';
 import { RewardModule } from './reward/reward.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { RewardModule } from './reward/reward.module';
     SettingsModule,
     RedeemModule,
     RewardModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService, ConfigService, PrismaService, JwtStrategy],

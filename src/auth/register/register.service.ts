@@ -105,7 +105,11 @@ export class RegisterService {
 
     const { password, ...userData } = user;
     return {
+<<<<<<< HEAD
       ...userData
+=======
+      ...userData,
+>>>>>>> cefd44b83c050bcb4d50a49bc273d26cdc13cefa
     };
   }
 
