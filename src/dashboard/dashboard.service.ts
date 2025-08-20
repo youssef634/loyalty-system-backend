@@ -74,12 +74,13 @@ export class DashboardService {
             select: { id: true, points: true },
         });
 
+        const totalCustomers = customers.length;
         const pointsDistribution = {
-            '0-500': customers.filter((c) => c.points <= 500).length,
-            '501-1000': customers.filter((c) => c.points >= 501 && c.points <= 1000).length,
-            '1001-1500': customers.filter((c) => c.points >= 1001 && c.points <= 1500).length,
-            '1501-2000': customers.filter((c) => c.points >= 1501 && c.points <= 2000).length,
-            '2001+': customers.filter((c) => c.points > 2000).length,
+            '0-500': totalCustomers ? (customers.filter((c) => c.points <= 500).length / totalCustomers * 100).toFixed(2) : '0',
+            '501-1000': totalCustomers ? (customers.filter((c) => c.points >= 501 && c.points <= 1000).length / totalCustomers * 100).toFixed(2) : '0',
+            '1001-1500': totalCustomers ? (customers.filter((c) => c.points >= 1001 && c.points <= 1500).length / totalCustomers * 100).toFixed(2) : '0',
+            '1501-2000': totalCustomers ? (customers.filter((c) => c.points >= 1501 && c.points <= 2000).length / totalCustomers * 100).toFixed(2) : '0',
+            '2001+': totalCustomers ? (customers.filter((c) => c.points > 2000).length / totalCustomers * 100).toFixed(2) : '0',
         };
 
         // 8. Most used products (top 5 from both cafe and restaurant)
