@@ -93,6 +93,7 @@ export class RegisterService {
         phone: user.phone,
         profileImage: user.profileImage,
         qrCode: user.qrCode,
+        role: user.role,
       },
     };
   }
@@ -103,7 +104,10 @@ export class RegisterService {
     if (!user) throw new BadRequestException('User not found');
 
     const { password, ...userData } = user;
-    return userData;
+    return {
+      ...userData,
+      role: user.role
+    };
   }
 
   // Update Name
