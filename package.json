@@ -27,6 +27,7 @@
     "@nestjs/platform-express": "^11.1.5",
     "@prisma/client": "^6.13.0",
     "arabic-reshaper": "^1.1.0",
+    "axios": "^1.11.0",
     "bcrypt": "^6.0.0",
     "bidi": "^0.0.1",
     "bidi-js": "^1.0.3",
