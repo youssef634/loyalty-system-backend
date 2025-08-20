@@ -10,14 +10,17 @@ import * as path from 'path';
 async function bootstrap() {
   dotenv.config();
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {});
-  
-  app.enableCors()
+
+  app.enableCors({origin: "https://loyalty-systemm.netlify.app/",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    credentials: true,
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
     })
   );
-  
+
   app.use(bodyParser.json({ limit: '50mb' }));
   app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
@@ -28,7 +31,7 @@ async function bootstrap() {
 
   // ✅ Serve /uploads as public so images are accessible
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/uploads', 
+    prefix: '/uploads',
   });
 
   app.setGlobalPrefix('/api');
