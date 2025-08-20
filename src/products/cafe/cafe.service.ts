@@ -8,6 +8,7 @@ import { PrismaService } from 'src/prisma/prisma.service/prisma.service';
 import { CreateCafeProductDto, UpdateCafeProductDto } from './dto/cafe.dto';
 import * as fs from 'fs';
 import * as path from 'path';
+import axios from 'axios';
 
 @Injectable()
 export class CafeProductsService {
@@ -21,14 +22,6 @@ export class CafeProductsService {
 
     if (!user) throw new NotFoundException('Current user not found');
     if (user.role !== 'ADMIN') throw new ForbiddenException('Admins only');
-  }
-
-  private getCafeProductsUploadPath() {
-    const uploadDir = path.join(process.cwd(), 'uploads', 'cafe-products');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    return uploadDir;
   }
 
   async getProducts(
@@ -91,13 +84,15 @@ export class CafeProductsService {
     await this.checkAdmin(currentUserId);
 
     if (file) {
-      const uploadDir = this.getCafeProductsUploadPath();
-      const fileName = `${Date.now()}_${file.originalname}`;
-      const filePath = path.join(uploadDir, fileName);
-
-      fs.writeFileSync(filePath, file.buffer);
-
-      data.image = `http://localhost:3000/uploads/cafe-products/${fileName}`;
+      data.image = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    } else if (data.image && /^https?:\/\//i.test(data.image)) {
+      // Fetch image from URL and convert to base64
+      const response = await axios.get(data.image, { responseType: 'arraybuffer' });
+      const mimeType = response.headers['content-type'] || 'image/jpeg';
+      const base64 = Buffer.from(response.data).toString('base64');
+      data.image = `data:${mimeType};base64,${base64}`;
+    } else {
+      data.image = null;
     }
 
     return this.prisma.cafeProduct.create({
@@ -121,26 +116,15 @@ export class CafeProductsService {
     let imageUrl = product.image;
 
     if (file) {
-      // Delete old file if exists
-      if (imageUrl) {
-        const oldPath = path.join(
-          process.cwd(),
-          'uploads',
-          'cafe-products',
-          path.basename(imageUrl),
-        );
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
-      }
-
-      const uploadDir = this.getCafeProductsUploadPath();
-      const fileName = `${Date.now()}_${file.originalname}`;
-      const filePath = path.join(uploadDir, fileName);
-
-      fs.writeFileSync(filePath, file.buffer);
-
-      imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
+      imageUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    } else if (data.image && /^https?:\/\//i.test(data.image)) {
+      // Fetch image from URL and convert to base64
+      const response = await axios.get(data.image, { responseType: 'arraybuffer' });
+      const mimeType = response.headers['content-type'] || 'image/jpeg';
+      const base64 = Buffer.from(response.data).toString('base64');
+      imageUrl = `data:${mimeType};base64,${base64}`;
+    } else if (data.image) {
+      imageUrl = data.image;
     }
 
     return this.prisma.cafeProduct.update({

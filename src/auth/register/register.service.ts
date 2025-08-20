@@ -14,6 +14,7 @@ import { ResetPasswordDto, ResetPasswordRequestDto } from './dto/reset-password.
 import { LoginDto, RegisterDto, UpdateNameDto, UpdatePasswordDto } from './dto/register.dto';
 import * as dotenv from 'dotenv';
 import * as QRCode from 'qrcode';
+import { Buffer } from 'buffer';
 
 dotenv.config();
 
@@ -24,23 +25,10 @@ export class RegisterService {
     private readonly jwt: JwtService,
   ) { }
 
-  private getQrUploadPath() {
-    const uploadDir = path.join(process.cwd(), 'uploads', 'qrcodes');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    return uploadDir;
-  }
-
-  private async generateUserQrPng(userId: number, email: string): Promise<string> {
-    const uploadDir = this.getQrUploadPath();
-    const fileName = `${email}.png`;
-    const filePath = path.join(uploadDir, fileName);
-
+  private async generateUserQrBase64(userId: number, email: string): Promise<string> {
     const qrPayload = JSON.stringify({ id: userId, email });
-    await QRCode.toFile(filePath, qrPayload);
-
-    return `http://localhost:3000/uploads/qrcodes/${fileName}`;
+    const qrBuffer = await QRCode.toBuffer(qrPayload);
+    return `data:image/png;base64,${qrBuffer.toString('base64')}`;
   }
 
   // Register New User
@@ -65,10 +53,10 @@ export class RegisterService {
     });
 
     // Generate QR code and update the user
-    const qrCodeUrl = await this.generateUserQrPng(newUser.id, newUser.email);
+    const qrCodeBase64 = await this.generateUserQrBase64(newUser.id, newUser.email);
     const updatedUser = await this.prisma.user.update({
       where: { id: newUser.id },
-      data: { qrCode: qrCodeUrl }
+      data: { qrCode: qrCodeBase64 }
     });
 
     return {
@@ -158,29 +146,13 @@ export class RegisterService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new BadRequestException('User not found');
 
-    const oldImagePath = user.profileImage
-      ? path.join(__dirname, '../../../uploads', path.basename(user.profileImage))
-      : null;
+    // Convert image buffer to base64 string
+    const base64Image = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
 
-    // Create file name
-    const fileName = `${userId}_${Date.now()}${path.extname(file.originalname)}`;
-    const uploadPath = path.join(__dirname, '../../../uploads', fileName);
-
-    // Save new image to disk
-    fs.writeFileSync(uploadPath, file.buffer);
-
-    // Build full public URL for DB
-    const fullImageUrl = `http://localhost:3000/uploads/${fileName}`;
-
-    // Delete old image only after new one saved successfully
-    if (oldImagePath && fs.existsSync(oldImagePath)) {
-      fs.unlinkSync(oldImagePath);
-    }
-
-    // Update DB with full URL
+    // Update DB with base64 string
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
-      data: { profileImage: fullImageUrl },
+      data: { profileImage: base64Image },
     });
 
     const { password, ...userWithoutPassword } = updatedUser;
@@ -189,7 +161,6 @@ export class RegisterService {
       user: userWithoutPassword,
     };
   }
-
 
   // Update Password
   async updatePassword(userId: number, dto: UpdatePasswordDto) {

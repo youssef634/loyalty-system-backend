@@ -19,23 +19,10 @@ export class UsersService {
         if (user.role !== 'ADMIN') throw new ForbiddenException('Admins only');
     }
 
-    private getQrUploadPath() {
-        const uploadDir = path.join(process.cwd(), 'uploads', 'qrcodes');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        return uploadDir;
-    }
-
-    private async generateUserQrPng(userId: number, email: string): Promise<string> {
-        const uploadDir = this.getQrUploadPath();
-        const fileName = `${email}.png`;
-        const filePath = path.join(uploadDir, fileName);
-
+    private async generateUserQrBase64(userId: number, email: string): Promise<string> {
         const qrPayload = JSON.stringify({ id: userId, email });
-        await QRCode.toFile(filePath, qrPayload);
-
-        return `http://localhost:3000/uploads/qrcodes/${fileName}`;
+        const qrBuffer = await QRCode.toBuffer(qrPayload);
+        return `data:image/png;base64,${qrBuffer.toString('base64')}`;
     }
 
     async addUser(currentUserId: number, data: CreateUserDto) {
@@ -60,11 +47,11 @@ export class UsersService {
             },
         });
 
-        // Generate and store QR code
-        const qrCodeUrl = await this.generateUserQrPng(newUser.id, newUser.email);
+        // Generate and store QR code as base64
+        const qrCodeBase64 = await this.generateUserQrBase64(newUser.id, newUser.email);
         return this.prisma.user.update({
             where: { id: newUser.id },
-            data: { qrCode: qrCodeUrl },
+            data: { qrCode: qrCodeBase64 },
             select: {
                 id: true,
                 enName: true,
@@ -78,8 +65,6 @@ export class UsersService {
             }
         });
     }
-
-
 
     async getAllUsers(
         currentUserId: number,
@@ -179,27 +164,8 @@ export class UsersService {
 
         // If email changes → regenerate QR code
         if (data.email && data.email !== user.email) {
-            // Delete old QR code
-            if (user.qrCode) {
-                const oldQrPath = path.join(process.cwd(), 'uploads', 'qrcodes', path.basename(user.qrCode));
-                if (fs.existsSync(oldQrPath)) {
-                    fs.unlinkSync(oldQrPath);
-                }
-            }
-
-            // Generate new QR code
-            const uploadDir = path.join(process.cwd(), 'uploads', 'qrcodes');
-            if (!fs.existsSync(uploadDir)) {
-                fs.mkdirSync(uploadDir, { recursive: true });
-            }
-
-            const fileName = `${data.email}.png`; // Name based on email
-            const filePath = path.join(uploadDir, fileName);
-
-            const qrPayload = JSON.stringify({ id: id, email: data.email });
-            await QRCode.toFile(filePath, qrPayload);
-
-            updateData.qrCode = `http://localhost:3000/uploads/qrcodes/${fileName}`;
+            // Generate new QR code as base64
+            updateData.qrCode = await this.generateUserQrBase64(id, data.email);
         }
 
         return this.prisma.user.update({
