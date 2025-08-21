@@ -81,26 +81,48 @@ export class RestaurantProductsService {
   ) {
     await this.checkAdmin(currentUserId);
 
-    let imageUrl: string | null = null;
     const uploadDir = path.join(process.cwd(), 'uploads', 'restaurant-products');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
+    let imageUrl: string | undefined;
+
     if (file) {
-      // Save uploaded file
       const fileName = `${Date.now()}_${file.originalname}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, file.buffer);
       imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
-    } else if (data.image && /^https?:\/\//i.test(data.image)) {
-      // Fetch image from URL and save
+    }
+    // Handle base64 image string
+    else if (data.image && /^data:image\/[a-z]+;base64,/.test(data.image)) {
+      const matches = data.image.match(/^data:image\/([a-z]+);base64,(.+)$/);
+      const ext = matches ? matches[1] : 'jpg';
+      const base64Data = matches ? matches[2] : '';
+      const fileName = `${Date.now()}_base64.${ext}`;
+      const filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+      imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
+    }
+    // Handle external image URL
+    else if (
+      data.image &&
+      /^https?:\/\//i.test(data.image) &&
+      !data.image.startsWith('http://localhost:3000/uploads/restaurant-products/')
+    ) {
       const response = await axios.get(data.image, { responseType: 'arraybuffer' });
       const ext = response.headers['content-type']?.split('/')[1] || 'jpg';
       const fileName = `${Date.now()}_url.${ext}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, response.data);
       imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
+    }
+    // Handle local image URL
+    else if (
+      data.image &&
+      data.image.startsWith('http://localhost:3000/uploads/restaurant-products/')
+    ) {
+      imageUrl = data.image;
     }
 
     return this.prisma.restaurantProduct.create({
@@ -129,19 +151,59 @@ export class RestaurantProductsService {
     }
 
     if (file) {
-      // Save uploaded file
+      // Delete old file if exists
+      if (imageUrl && imageUrl.startsWith('http://localhost:3000/uploads/restaurant-products/')) {
+        const oldPath = path.join(uploadDir, path.basename(imageUrl));
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
       const fileName = `${Date.now()}_${file.originalname}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, file.buffer);
       imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
-    } else if (data.image && /^https?:\/\//i.test(data.image)) {
-      // Fetch image from URL and save
+    }
+    // Handle base64 image string
+    else if (data.image && /^data:image\/[a-z]+;base64,/.test(data.image)) {
+      if (imageUrl && imageUrl.startsWith('http://localhost:3000/uploads/restaurant-products/')) {
+        const oldPath = path.join(uploadDir, path.basename(imageUrl));
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+      const matches = data.image.match(/^data:image\/([a-z]+);base64,(.+)$/);
+      const ext = matches ? matches[1] : 'jpg';
+      const base64Data = matches ? matches[2] : '';
+      const fileName = `${Date.now()}_base64.${ext}`;
+      const filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+      imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
+    }
+    // Handle external image URL
+    else if (
+      data.image &&
+      /^https?:\/\//i.test(data.image) &&
+      !data.image.startsWith('http://localhost:3000/uploads/restaurant-products/')
+    ) {
+      if (imageUrl && imageUrl.startsWith('http://localhost:3000/uploads/restaurant-products/')) {
+        const oldPath = path.join(uploadDir, path.basename(imageUrl));
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
       const response = await axios.get(data.image, { responseType: 'arraybuffer' });
       const ext = response.headers['content-type']?.split('/')[1] || 'jpg';
       const fileName = `${Date.now()}_url.${ext}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, response.data);
       imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
+    }
+    // Handle local image URL
+    else if (
+      data.image &&
+      data.image.startsWith('http://localhost:3000/uploads/restaurant-products/')
+    ) {
+      imageUrl = data.image;
     }
 
     return this.prisma.restaurantProduct.update({
