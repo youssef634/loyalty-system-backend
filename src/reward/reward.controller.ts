@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Patch, Body, Request, UseGuards, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Body, Request, UseGuards, ParseIntPipe, Query, Delete } from '@nestjs/common';
 import { RewardService } from './reward.service';
 import { AuthGuard } from '@nestjs/passport';
 
@@ -60,5 +60,10 @@ export class RewardController {
         @Body('note') note?: string
     ) {
         return this.rewardService.rejectRewards(req.user.id, rewardIds, note);
+    }
+
+    @Delete('delete-rejected')
+    deleteRejectedRewards(@Request() req) {
+        return this.rewardService.deleteRejectedRewards(req.user.id);
     }
 }

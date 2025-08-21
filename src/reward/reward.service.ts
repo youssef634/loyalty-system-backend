@@ -157,6 +157,14 @@ export class RewardService {
         });
     }
 
+    async deleteRejectedRewards(adminId: number) {
+        await this.checkAdmin(adminId);
+        const rewards = await this.prisma.myReward.findMany({ where: { status: RewardStatus.REJECTED } });
+        for (const reward of rewards) {
+            await this.prisma.myReward.delete({ where: { id: reward.id } });
+        }
+    }
+
     async approveRewards(adminId: number, rewardIds: number[]) {
         await this.checkAdmin(adminId);
 
