@@ -25,10 +25,23 @@ export class RegisterService {
     private readonly jwt: JwtService,
   ) { }
 
-  private async generateUserQrBase64(userId: number, email: string): Promise<string> {
+  private getQrUploadPath() {
+    const uploadDir = path.join(process.cwd(), 'uploads', 'qrcodes');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    return uploadDir;
+  }
+
+  private async generateUserQrPng(userId: number, email: string): Promise<string> {
+    const uploadDir = this.getQrUploadPath();
+    const fileName = `${email}.png`;
+    const filePath = path.join(uploadDir, fileName);
+
     const qrPayload = JSON.stringify({ id: userId, email });
-    const qrBuffer = await QRCode.toBuffer(qrPayload);
-    return `data:image/png;base64,${qrBuffer.toString('base64')}`;
+    await QRCode.toFile(filePath, qrPayload);
+
+    return `http://loyalty-system-backend-production.up.railway.app/uploads/qrcodes/${fileName}`;
   }
 
   // Register New User
@@ -53,10 +66,10 @@ export class RegisterService {
     });
 
     // Generate QR code and update the user
-    const qrCodeBase64 = await this.generateUserQrBase64(newUser.id, newUser.email);
+    const qrCode = await this.generateUserQrPng(newUser.id, newUser.email);
     const updatedUser = await this.prisma.user.update({
       where: { id: newUser.id },
-      data: { qrCode: qrCodeBase64 }
+      data: { qrCode: qrCode }
     });
 
     return {
@@ -149,13 +162,29 @@ export class RegisterService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new BadRequestException('User not found');
 
-    // Convert image buffer to base64 string
-    const base64Image = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    const oldImagePath = user.profileImage
+      ? path.join(__dirname, '../../../uploads', path.basename(user.profileImage))
+      : null;
 
-    // Update DB with base64 string
+    // Create file name
+    const fileName = `${userId}_${Date.now()}${path.extname(file.originalname)}`;
+    const uploadPath = path.join(__dirname, '../../../uploads', fileName);
+
+    // Save new image to disk
+    fs.writeFileSync(uploadPath, file.buffer);
+
+    // Build full public URL for DB
+    const fullImageUrl = `http://loyalty-system-backend-production.up.railway.app/uploads/${fileName}`;
+
+    // Delete old image only after new one saved successfully
+    if (oldImagePath && fs.existsSync(oldImagePath)) {
+      fs.unlinkSync(oldImagePath);
+    }
+
+    // Update DB with full URL
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
-      data: { profileImage: base64Image },
+      data: { profileImage: fullImageUrl },
     });
 
     const { password, ...userWithoutPassword } = updatedUser;
