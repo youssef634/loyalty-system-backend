@@ -83,18 +83,14 @@ export class CafeProductsService {
   ) {
     await this.checkAdmin(currentUserId);
 
-    let imageUrl: string | null = null;
-    const uploadDir = path.join(process.cwd(), 'uploads', 'cafe-products');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+    const uploadDir = this.getCafeProductsUploadPath();
+    let imageUrl: string | undefined;
 
     if (file) {
-      // Save uploaded file
       const fileName = `${Date.now()}_${file.originalname}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, file.buffer);
-      imageUrl = `http://loyalty-system-backend-production.up.railway.app/uploads/cafe-products/${fileName}`;
+      imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
     } else if (data.image && /^https?:\/\//i.test(data.image)) {
       // Fetch image from URL and save
       const response = await axios.get(data.image, { responseType: 'arraybuffer' });
@@ -102,7 +98,7 @@ export class CafeProductsService {
       const fileName = `${Date.now()}_url.${ext}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, response.data);
-      imageUrl = `http://loyalty-system-backend-production.up.railway.app/uploads/cafe-products/${fileName}`;
+      imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
     }
 
     return this.prisma.cafeProduct.create({
@@ -125,25 +121,35 @@ export class CafeProductsService {
     if (!product) throw new NotFoundException('Product not found');
 
     let imageUrl = product.image;
-    const uploadDir = path.join(process.cwd(), 'uploads', 'cafe-products');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+    const uploadDir = this.getCafeProductsUploadPath();
 
     if (file) {
-      // Save uploaded file
+      // Delete old file if exists
+      if (imageUrl) {
+        const oldPath = path.join(uploadDir, path.basename(imageUrl));
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
       const fileName = `${Date.now()}_${file.originalname}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, file.buffer);
-      imageUrl = `http://loyalty-system-backend-production.up.railway.app/uploads/cafe-products/${fileName}`;
+      imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
     } else if (data.image && /^https?:\/\//i.test(data.image)) {
+      // Delete old file if exists
+      if (imageUrl) {
+        const oldPath = path.join(uploadDir, path.basename(imageUrl));
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
       // Fetch image from URL and save
       const response = await axios.get(data.image, { responseType: 'arraybuffer' });
       const ext = response.headers['content-type']?.split('/')[1] || 'jpg';
       const fileName = `${Date.now()}_url.${ext}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, response.data);
-      imageUrl = `http://loyalty-system-backend-production.up.railway.app/uploads/cafe-products/${fileName}`;
+      imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
     }
 
     return this.prisma.cafeProduct.update({
@@ -162,7 +168,7 @@ export class CafeProductsService {
     if (!product) throw new NotFoundException('Product not found');
 
     // Delete image file if exists and is a local file
-    if (product.image && product.image.startsWith('http://loyalty-system-backend-production.up.railway.app/uploads/cafe-products/')) {
+    if (product.image && product.image.startsWith('http://localhost:3000/uploads/cafe-products/')) {
       const fileName = path.basename(product.image);
       const filePath = path.join(process.cwd(), 'uploads', 'cafe-products', fileName);
       if (fs.existsSync(filePath)) {
@@ -170,5 +176,9 @@ export class CafeProductsService {
       }
     }
     return this.prisma.cafeProduct.delete({ where: { id } });
+  }
+
+  private getCafeProductsUploadPath() {
+    return path.join(process.cwd(), 'uploads', 'cafe-products');
   }
 }
