@@ -12,7 +12,7 @@ import axios from 'axios';
 
 @Injectable()
 export class CafeProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   private async checkAdmin(userId: number) {
     const user = await this.prisma.user.findUnique({
@@ -125,17 +125,25 @@ export class CafeProductsService {
     if (!product) throw new NotFoundException('Product not found');
 
     let imageUrl = product.image;
+    const uploadDir = path.join(process.cwd(), 'uploads', 'cafe-products');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
 
     if (file) {
-      imageUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+      // Save uploaded file
+      const fileName = `${Date.now()}_${file.originalname}`;
+      const filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, file.buffer);
+      imageUrl = `http://loyalty-system-backend-production.up.railway.app/uploads/cafe-products/${fileName}`;
     } else if (data.image && /^https?:\/\//i.test(data.image)) {
-      // Fetch image from URL and convert to base64
+      // Fetch image from URL and save
       const response = await axios.get(data.image, { responseType: 'arraybuffer' });
-      const mimeType = response.headers['content-type'] || 'image/jpeg';
-      const base64 = Buffer.from(response.data).toString('base64');
-      imageUrl = `data:${mimeType};base64,${base64}`;
-    } else if (data.image) {
-      imageUrl = data.image;
+      const ext = response.headers['content-type']?.split('/')[1] || 'jpg';
+      const fileName = `${Date.now()}_url.${ext}`;
+      const filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, response.data);
+      imageUrl = `http://loyalty-system-backend-production.up.railway.app/uploads/cafe-products/${fileName}`;
     }
 
     return this.prisma.cafeProduct.update({
