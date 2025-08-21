@@ -83,21 +83,32 @@ export class CafeProductsService {
   ) {
     await this.checkAdmin(currentUserId);
 
+    let imageUrl: string | null = null;
+    const uploadDir = path.join(process.cwd(), 'uploads', 'cafe-products');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
     if (file) {
-      data.image = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+      // Save uploaded file
+      const fileName = `${Date.now()}_${file.originalname}`;
+      const filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, file.buffer);
+      imageUrl = `http://loyalty-system-backend-production.up.railway.app/uploads/cafe-products/${fileName}`;
     } else if (data.image && /^https?:\/\//i.test(data.image)) {
-      // Fetch image from URL and convert to base64
+      // Fetch image from URL and save
       const response = await axios.get(data.image, { responseType: 'arraybuffer' });
-      const mimeType = response.headers['content-type'] || 'image/jpeg';
-      const base64 = Buffer.from(response.data).toString('base64');
-      data.image = `data:${mimeType};base64,${base64}`;
-    } else {
-      data.image = null;
+      const ext = response.headers['content-type']?.split('/')[1] || 'jpg';
+      const fileName = `${Date.now()}_url.${ext}`;
+      const filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, response.data);
+      imageUrl = `http://loyalty-system-backend-production.up.railway.app/uploads/cafe-products/${fileName}`;
     }
 
     return this.prisma.cafeProduct.create({
       data: {
         ...data,
+        image: imageUrl,
       },
     });
   }
@@ -141,6 +152,15 @@ export class CafeProductsService {
 
     const product = await this.prisma.cafeProduct.findUnique({ where: { id } });
     if (!product) throw new NotFoundException('Product not found');
+
+    // Delete image file if exists and is a local file
+    if (product.image && product.image.startsWith('http://loyalty-system-backend-production.up.railway.app/uploads/cafe-products/')) {
+      const fileName = path.basename(product.image);
+      const filePath = path.join(process.cwd(), 'uploads', 'cafe-products', fileName);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
     return this.prisma.cafeProduct.delete({ where: { id } });
   }
 }

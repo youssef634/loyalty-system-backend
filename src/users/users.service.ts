@@ -19,10 +19,23 @@ export class UsersService {
         if (user.role !== 'ADMIN') throw new ForbiddenException('Admins only');
     }
 
-    private async generateUserQrBase64(userId: number, email: string): Promise<string> {
+    private getQrUploadPath() {
+        const uploadDir = path.join(process.cwd(), 'uploads', 'qrcodes');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        return uploadDir;
+    }
+
+    private async generateUserQrPng(userId: number, email: string): Promise<string> {
+        const uploadDir = this.getQrUploadPath();
+        const fileName = `${email}.png`;
+        const filePath = path.join(uploadDir, fileName);
+
         const qrPayload = JSON.stringify({ id: userId, email });
-        const qrBuffer = await QRCode.toBuffer(qrPayload);
-        return `data:image/png;base64,${qrBuffer.toString('base64')}`;
+        await QRCode.toFile(filePath, qrPayload);
+
+        return `http://loyalty-system-backend-production.up.railway.app/uploads/qrcodes/${fileName}`;
     }
 
     async addUser(currentUserId: number, data: CreateUserDto) {
@@ -48,10 +61,10 @@ export class UsersService {
         });
 
         // Generate and store QR code as base64
-        const qrCodeBase64 = await this.generateUserQrBase64(newUser.id, newUser.email);
+        const qrCode = await this.generateUserQrPng(newUser.id, newUser.email);
         return this.prisma.user.update({
             where: { id: newUser.id },
-            data: { qrCode: qrCodeBase64 },
+            data: { qrCode: qrCode },
             select: {
                 id: true,
                 enName: true,
@@ -124,6 +137,22 @@ export class UsersService {
         const user = await this.prisma.user.findUnique({ where: { id } });
         if (!user) throw new NotFoundException('User not found');
 
+        // Delete profile image file if exists
+        if (user.profileImage) {
+            const profileImgPath = path.join(process.cwd(), 'uploads', path.basename(user.profileImage));
+            if (fs.existsSync(profileImgPath)) {
+                fs.unlinkSync(profileImgPath);
+            }
+        }
+
+        // Delete QR code image file if exists
+        if (user.qrCode) {
+            const qrImgPath = path.join(process.cwd(), 'uploads', 'qrcodes', path.basename(user.qrCode));
+            if (fs.existsSync(qrImgPath)) {
+                fs.unlinkSync(qrImgPath);
+            }
+        }
+
         // Delete related transactions
         await this.prisma.transaction.deleteMany({ where: { userId: id } });
 
@@ -159,8 +188,16 @@ export class UsersService {
 
         // If email changes → regenerate QR code
         if (data.email && data.email !== user.email) {
-            // Generate new QR code as base64
-            updateData.qrCode = await this.generateUserQrBase64(id, data.email);
+            // Delete old QR code
+            if (user.qrCode) {
+                const oldQrPath = path.join(process.cwd(), 'uploads', 'qrcodes', path.basename(user.qrCode));
+                if (fs.existsSync(oldQrPath)) {
+                    fs.unlinkSync(oldQrPath);
+                }
+            }
+
+            // Generate new QR code
+            updateData.qrCode = await this.generateUserQrPng(id, data.email);
         }
 
         return this.prisma.user.update({
