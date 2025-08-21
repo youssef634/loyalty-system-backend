@@ -15,6 +15,7 @@ import { LoginDto, RegisterDto, UpdateNameDto, UpdatePasswordDto } from './dto/r
 import * as dotenv from 'dotenv';
 import * as QRCode from 'qrcode';
 import { Buffer } from 'buffer';
+import axios from 'axios';
 
 dotenv.config();
 
@@ -156,35 +157,76 @@ export class RegisterService {
   }
 
   // Upload Profile Image
-  async uploadProfileImage(userId: number, file: Express.Multer.File) {
-    if (!file) throw new BadRequestException('No file uploaded');
-
+  async uploadProfileImage(userId: number, file?: Express.Multer.File, image?: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new BadRequestException('User not found');
 
-    const oldImagePath = user.profileImage
-      ? path.join(__dirname, '../../../uploads', path.basename(user.profileImage))
-      : null;
-
-    // Create file name
-    const fileName = `${userId}_${Date.now()}${path.extname(file.originalname)}`;
-    const uploadPath = path.join(__dirname, '../../../uploads', fileName);
-
-    // Save new image to disk
-    fs.writeFileSync(uploadPath, file.buffer);
-
-    // Build full public URL for DB
-    const fullImageUrl = `http://localhost:3000/uploads/${fileName}`;
-
-    // Delete old image only after new one saved successfully
-    if (oldImagePath && fs.existsSync(oldImagePath)) {
-      fs.unlinkSync(oldImagePath);
+    const uploadDir = path.join(process.cwd(), 'uploads', 'profiles');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    // Update DB with full URL
+    let imageUrl = user.profileImage;
+
+    // Handle file upload
+    if (file) {
+      if (imageUrl && imageUrl.startsWith('http://localhost:3000/uploads/profiles/')) {
+        const oldPath = path.join(uploadDir, path.basename(imageUrl));
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+      const fileName = `${userId}_${Date.now()}${path.extname(file.originalname)}`;
+      const filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, file.buffer);
+      imageUrl = `http://localhost:3000/uploads/profiles/${fileName}`;
+    }
+    // Handle base64 image string
+    else if (image && /^data:image\/[a-z]+;base64,/.test(image)) {
+      if (imageUrl && imageUrl.startsWith('http://localhost:3000/uploads/profiles/')) {
+        const oldPath = path.join(uploadDir, path.basename(imageUrl));
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+      const matches = image.match(/^data:image\/([a-z]+);base64,(.+)$/);
+      const ext = matches ? matches[1] : 'jpg';
+      const base64Data = matches ? matches[2] : '';
+      const fileName = `${userId}_${Date.now()}_base64.${ext}`;
+      const filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+      imageUrl = `http://localhost:3000/uploads/profiles/${fileName}`;
+    }
+    // Handle external image URL
+    else if (
+      image &&
+      /^https?:\/\//i.test(image) &&
+      !image.startsWith('http://localhost:3000/uploads/profiles/')
+    ) {
+      if (imageUrl && imageUrl.startsWith('http://localhost:3000/uploads/profiles/')) {
+        const oldPath = path.join(uploadDir, path.basename(imageUrl));
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+      const response = await axios.get(image, { responseType: 'arraybuffer' });
+      const ext = response.headers['content-type']?.split('/')[1] || 'jpg';
+      const fileName = `${userId}_${Date.now()}_url.${ext}`;
+      const filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, response.data);
+      imageUrl = `http://localhost:3000/uploads/profiles/${fileName}`;
+    }
+    // Handle local image URL
+    else if (
+      image &&
+      image.startsWith('http://localhost:3000/uploads/profiles/')
+    ) {
+      imageUrl = image;
+    }
+
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
-      data: { profileImage: fullImageUrl },
+      data: { profileImage: imageUrl },
     });
 
     const { password, ...userWithoutPassword } = updatedUser;

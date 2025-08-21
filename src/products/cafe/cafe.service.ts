@@ -91,14 +91,36 @@ export class CafeProductsService {
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, file.buffer);
       imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
-    } else if (data.image && /^https?:\/\//i.test(data.image)) {
-      // Fetch image from URL and save
+    }
+    // Handle base64 image string
+    else if (data.image && /^data:image\/[a-z]+;base64,/.test(data.image)) {
+      const matches = data.image.match(/^data:image\/([a-z]+);base64,(.+)$/);
+      const ext = matches ? matches[1] : 'jpg';
+      const base64Data = matches ? matches[2] : '';
+      const fileName = `${Date.now()}_base64.${ext}`;
+      const filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+      imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
+    }
+    // Handle external image URL
+    else if (
+      data.image &&
+      /^https?:\/\//i.test(data.image) &&
+      !data.image.startsWith('http://localhost:3000/uploads/cafe-products/')
+    ) {
       const response = await axios.get(data.image, { responseType: 'arraybuffer' });
       const ext = response.headers['content-type']?.split('/')[1] || 'jpg';
       const fileName = `${Date.now()}_url.${ext}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, response.data);
       imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
+    }
+    // Handle local image URL
+    else if (
+      data.image &&
+      data.image.startsWith('http://localhost:3000/uploads/cafe-products/')
+    ) {
+      imageUrl = data.image;
     }
 
     return this.prisma.cafeProduct.create({
@@ -123,8 +145,8 @@ export class CafeProductsService {
     let imageUrl = product.image;
     const uploadDir = this.getCafeProductsUploadPath();
 
+    // Handle file upload
     if (file) {
-      // Delete old file if exists
       if (imageUrl) {
         const oldPath = path.join(uploadDir, path.basename(imageUrl));
         if (fs.existsSync(oldPath)) {
@@ -135,21 +157,49 @@ export class CafeProductsService {
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, file.buffer);
       imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
-    } else if (data.image && /^https?:\/\//i.test(data.image)) {
-      // Delete old file if exists
+    }
+    // Handle base64 image string
+    else if (data.image && /^data:image\/[a-z]+;base64,/.test(data.image)) {
       if (imageUrl) {
         const oldPath = path.join(uploadDir, path.basename(imageUrl));
         if (fs.existsSync(oldPath)) {
           fs.unlinkSync(oldPath);
         }
       }
-      // Fetch image from URL and save
+      // Extract base64 data and extension
+      const matches = data.image.match(/^data:image\/([a-z]+);base64,(.+)$/);
+      const ext = matches ? matches[1] : 'jpg';
+      const base64Data = matches ? matches[2] : '';
+      const fileName = `${Date.now()}_base64.${ext}`;
+      const filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+      imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
+    }
+    // Handle image URL
+    else if (
+      data.image &&
+      /^https?:\/\//i.test(data.image) &&
+      !data.image.startsWith('http://localhost:3000/uploads/cafe-products/')
+    ) {
+      // Only fetch and save if it's an external image URL
+      if (imageUrl) {
+        const oldPath = path.join(uploadDir, path.basename(imageUrl));
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
       const response = await axios.get(data.image, { responseType: 'arraybuffer' });
       const ext = response.headers['content-type']?.split('/')[1] || 'jpg';
       const fileName = `${Date.now()}_url.${ext}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, response.data);
       imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
+    } else if (
+      data.image &&
+      data.image.startsWith('http://localhost:3000/uploads/cafe-products/')
+    ) {
+      // If it's already a local image URL, just use it
+      imageUrl = data.image;
     }
 
     return this.prisma.cafeProduct.update({
@@ -170,7 +220,7 @@ export class CafeProductsService {
     // Delete image file if exists and is a local file
     if (product.image && product.image.startsWith('http://localhost:3000/uploads/cafe-products/')) {
       const fileName = path.basename(product.image);
-      const filePath = path.join(process.cwd(), 'uploads', 'cafe-products', fileName);
+      const filePath = path.join(this.getCafeProductsUploadPath(), fileName);
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
