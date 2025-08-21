@@ -235,7 +235,23 @@ export class RegisterService {
       user: userWithoutPassword,
     };
   }
+  // Remove Profile Image
+  async removeProfileImage(userId: number) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
 
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { profileImage: null },
+    });
+
+    const { password, ...userWithoutPassword } = updatedUser;
+    return {
+      message: 'Profile image removed successfully',
+      user: userWithoutPassword,
+    };
+  }
+    
   // Update Password
   async updatePassword(userId: number, dto: UpdatePasswordDto) {
     const { oldPassword, newPassword, confirmPassword } = dto;

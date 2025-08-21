@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Put, UseGuards, Request, Param, Patch, UploadedFile, UseInterceptors, Req, } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, UseGuards, Request, Param, Patch, UploadedFile, UseInterceptors, Req, Delete } from '@nestjs/common';
 import { RegisterService } from './register.service';
 import { RegisterDto, LoginDto, UpdateNameDto, UpdatePasswordDto } from './dto/register.dto';
 import { ResetPasswordDto, ResetPasswordRequestDto } from './dto/reset-password.dto';
@@ -53,5 +53,11 @@ export class RegisterController {
     @UseInterceptors(FileInterceptor('image'))
     async uploadImage(@UploadedFile() file: Express.Multer.File, @Req() req) {
         return this.registerService.uploadProfileImage(req.user.id, file);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Delete('profile/image')
+    async removeImage(@Req() req) {
+        return this.registerService.removeProfileImage(req.user.id);
     }
 }
