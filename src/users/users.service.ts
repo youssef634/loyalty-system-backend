@@ -121,25 +121,20 @@ export class UsersService {
 
     async deleteUser(currentUserId: number, id: number) {
         await this.checkAdmin(currentUserId);
-
         const user = await this.prisma.user.findUnique({ where: { id } });
         if (!user) throw new NotFoundException('User not found');
 
-        // Delete profile image file if exists
-        if (user.profileImage) {
-            const profileImgPath = path.join(process.cwd(), 'uploads', path.basename(user.profileImage));
-            if (fs.existsSync(profileImgPath)) {
-                fs.unlinkSync(profileImgPath);
-            }
-        }
+        // Delete related transactions
+        await this.prisma.transaction.deleteMany({ where: { userId: id } });
 
-        // Delete QR code image file if exists
-        if (user.qrCode) {
-            const qrImgPath = path.join(process.cwd(), 'uploads', 'qrcodes', path.basename(user.qrCode));
-            if (fs.existsSync(qrImgPath)) {
-                fs.unlinkSync(qrImgPath);
-            }
-        }
+        // Delete related rewards
+        await this.prisma.myReward.deleteMany({ where: { userId: id } });
+
+        // Delete related settings
+        await this.prisma.settings.deleteMany({ where: { userId: id } });
+
+        // Delete related reset password tokens
+        await this.prisma.resetPasswordToken.deleteMany({ where: { userId: id } });
 
         // Delete the user record from DB
         return this.prisma.user.delete({ where: { id } });
