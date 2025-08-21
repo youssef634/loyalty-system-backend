@@ -35,7 +35,7 @@ export class UsersService {
         const qrPayload = JSON.stringify({ id: userId, email });
         await QRCode.toFile(filePath, qrPayload);
 
-        return `http://loyalty-system-backend-production.up.railway.app/uploads/qrcodes/${fileName}`;
+        return `http://localhost:3000/uploads/qrcodes/${fileName}`;
     }
 
     async addUser(currentUserId: number, data: CreateUserDto) {

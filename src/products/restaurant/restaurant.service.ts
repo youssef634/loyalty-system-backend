@@ -92,7 +92,7 @@ export class RestaurantProductsService {
       const fileName = `${Date.now()}_${file.originalname}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, file.buffer);
-      imageUrl = `http://loyalty-system-backend-production.up.railway.app/uploads/restaurant-products/${fileName}`;
+      imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
     } else if (data.image && /^https?:\/\//i.test(data.image)) {
       // Fetch image from URL and save
       const response = await axios.get(data.image, { responseType: 'arraybuffer' });
@@ -100,7 +100,7 @@ export class RestaurantProductsService {
       const fileName = `${Date.now()}_url.${ext}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, response.data);
-      imageUrl = `http://loyalty-system-backend-production.up.railway.app/uploads/restaurant-products/${fileName}`;
+      imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
     }
 
     return this.prisma.restaurantProduct.create({
@@ -133,7 +133,7 @@ export class RestaurantProductsService {
       const fileName = `${Date.now()}_${file.originalname}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, file.buffer);
-      imageUrl = `http://loyalty-system-backend-production.up.railway.app/uploads/restaurant-products/${fileName}`;
+      imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
     } else if (data.image && /^https?:\/\//i.test(data.image)) {
       // Fetch image from URL and save
       const response = await axios.get(data.image, { responseType: 'arraybuffer' });
@@ -141,7 +141,7 @@ export class RestaurantProductsService {
       const fileName = `${Date.now()}_url.${ext}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, response.data);
-      imageUrl = `http://loyalty-system-backend-production.up.railway.app/uploads/restaurant-products/${fileName}`;
+      imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
     }
 
     return this.prisma.restaurantProduct.update({
@@ -160,7 +160,7 @@ export class RestaurantProductsService {
     if (!product) throw new NotFoundException('Product not found');
 
     // Delete image file if exists and is a local file
-    if (product.image && product.image.startsWith('http://loyalty-system-backend-production.up.railway.app/uploads/restaurant-products/')) {
+    if (product.image && product.image.startsWith('http://localhost:3000/uploads/restaurant-products/')) {
       const fileName = path.basename(product.image);
       const filePath = path.join(process.cwd(), 'uploads', 'restaurant-products', fileName);
       if (fs.existsSync(filePath)) {

@@ -41,7 +41,7 @@ export class RegisterService {
     const qrPayload = JSON.stringify({ id: userId, email });
     await QRCode.toFile(filePath, qrPayload);
 
-    return `http://loyalty-system-backend-production.up.railway.app/uploads/qrcodes/${fileName}`;
+    return `http://localhost:3000/uploads/qrcodes/${fileName}`;
   }
 
   // Register New User
@@ -174,7 +174,7 @@ export class RegisterService {
     fs.writeFileSync(uploadPath, file.buffer);
 
     // Build full public URL for DB
-    const fullImageUrl = `http://loyalty-system-backend-production.up.railway.app/uploads/${fileName}`;
+    const fullImageUrl = `http://localhost:3000/uploads/${fileName}`;
 
     // Delete old image only after new one saved successfully
     if (oldImagePath && fs.existsSync(oldImagePath)) {
