@@ -27,13 +27,11 @@ async function bootstrap() {
   app.use(bodyParser.json({ limit: '50mb' }));
   app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
-  // ✅ Serve /public as before
   app.useStaticAssets(path.join(__dirname, '..', 'public'), {
     prefix: '/api/public',
     
   });
 
-  // ✅ Serve /uploads as public so images are accessible
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads',
   });
