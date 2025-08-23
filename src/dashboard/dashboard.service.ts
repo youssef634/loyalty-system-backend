@@ -151,6 +151,22 @@ export class DashboardService {
             })
         );
 
+        // 9. Get most recent users
+        const recentUsers = await this.prisma.user.findMany({
+            where: { role: 'USER' },
+            select: {
+                id: true,
+                enName: true,
+                arName: true,
+                email: true,
+                points: true,
+                profileImage: true,
+                createdAt: true
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 5
+        });
+
         return {
             customersCount,
             totalPoints: totalPoints._sum.points || 0,
@@ -161,6 +177,7 @@ export class DashboardService {
             topEarners: topEarnersWithUser,
             pointsDistribution,
             mostUsedProducts,
+            recentUsers
         };
     }
 

@@ -24,7 +24,8 @@ model User {
   profileImage        String?
   role                Role                 @default(USER)
   points              Int                  @default(0)
-  qrCode              String?              
+  qrCode              String?
+  createdAt           DateTime @default(now())
   transactions        Transaction[]
   resetPasswordTokens ResetPasswordToken[]
   myRewards           MyReward[]

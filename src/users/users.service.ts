@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import * as QRCode from 'qrcode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class UsersService {
@@ -57,6 +58,7 @@ export class UsersService {
                 password: hashedPassword,
                 role: data.role || 'USER',
                 points: Number(data.points) || 0,
+                createdAt: new Date()
             },
         });
 
@@ -74,7 +76,8 @@ export class UsersService {
                 role: true,
                 points: true,
                 profileImage: true,
-                qrCode: true
+                qrCode: true,
+                createdAt: true
             }
         });
     }
@@ -92,6 +95,14 @@ export class UsersService {
         },
     ) {
         await this.checkAdmin(currentUserId);
+
+        // Get timezone from settings
+        let settings = await this.prisma.settings.findUnique({ where: { userId: currentUserId } });
+        if (!settings) {
+            settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+            if (!settings) throw new NotFoundException('Admin settings not found');
+        }
+        const timezone = settings?.timezone || 'UTC';
 
         const limit = searchFilters?.limit && searchFilters.limit > 0 ? searchFilters.limit : 10;
         const filters: any = {};
@@ -120,15 +131,24 @@ export class UsersService {
                 role: true,
                 points: true,
                 profileImage: true,
-                qrCode: true
+                qrCode: true,
+                createdAt: true
             },
         });
+
+        const formattedUsers = users.map(user => ({
+            ...user,
+            createdAt: DateTime
+                .fromJSDate(user.createdAt, { zone: 'utc' })
+                .setZone(timezone)
+                .toFormat('MMM dd, yyyy, hh:mm a')
+        }));
 
         return {
             totalUsers,
             totalPages,
             currentPage: page,
-            users,
+            users: formattedUsers,
         };
     }
 
@@ -212,7 +232,8 @@ export class UsersService {
                 role: true,
                 points: true,
                 profileImage: true,
-                qrCode: true
+                qrCode: true,
+                createdAt: true
             }
         });
     }
@@ -267,6 +288,7 @@ export class UsersService {
                 points: true,
                 profileImage: true,
                 qrCode: true,
+                createdAt: true
             },
         });
 

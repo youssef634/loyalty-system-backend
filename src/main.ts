@@ -30,6 +30,7 @@ async function bootstrap() {
   // ✅ Serve /public as before
   app.useStaticAssets(path.join(__dirname, '..', 'public'), {
     prefix: '/api/public',
+    
   });
 
   // ✅ Serve /uploads as public so images are accessible
