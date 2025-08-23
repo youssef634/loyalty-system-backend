@@ -45,7 +45,7 @@ export class RewardService {
         const filters: any = {};
 
         // Search filters
-        if (searchFilters?.id) filters.id = searchFilters.id; 
+        if (searchFilters?.id) filters.id = searchFilters.id;
         if (searchFilters?.type) filters.type = { contains: searchFilters.type, mode: 'insensitive' };
         if (searchFilters?.status) filters.status = { equals: searchFilters.status };
 
@@ -103,66 +103,6 @@ export class RewardService {
             currentPage: page,
             rewards: formattedRewards,
         };
-    }
-
-    async approveReward(adminId: number, rewardId: number) {
-        await this.checkAdmin(adminId);
-
-        const reward = await this.prisma.myReward.findUnique({ where: { id: rewardId } });
-        if (!reward) throw new NotFoundException('Reward not found');
-        if (reward.status === RewardStatus.REJECTED) {
-            throw new ForbiddenException('Cannot approve a rejected reward');
-        }
-        if (reward.status === RewardStatus.APPROVED) {
-            throw new ForbiddenException('Reward is already approved');
-        }
-
-        return this.prisma.myReward.update({
-            where: { id: rewardId },
-            data: {
-                status: RewardStatus.APPROVED,
-                date: new Date(), // update date when status changes
-            },
-        });
-    }
-
-    async rejectReward(adminId: number, rewardId: number, note?: string) {
-        await this.checkAdmin(adminId);
-
-        const reward = await this.prisma.myReward.findUnique({
-            where: { id: rewardId },
-            include: { user: true },
-        });
-        if (!reward) throw new NotFoundException('Reward not found');
-        if (reward.status === RewardStatus.APPROVED) {
-            throw new ForbiddenException('Cannot reject an approved reward');
-        }
-        if (reward.status === RewardStatus.REJECTED) {
-            throw new ForbiddenException('Reward is already rejected');
-        }
-
-        // Return points to user
-        await this.prisma.user.update({
-            where: { id: reward.userId },
-            data: { points: reward.user.points + reward.points },
-        });
-
-        return this.prisma.myReward.update({
-            where: { id: rewardId },
-            data: {
-                status: RewardStatus.REJECTED,
-                note: note || null,
-                date: new Date(), // update date
-            },
-        });
-    }
-
-    async deleteRejectedRewards(adminId: number) {
-        await this.checkAdmin(adminId);
-        const rewards = await this.prisma.myReward.findMany({ where: { status: RewardStatus.REJECTED } });
-        for (const reward of rewards) {
-            await this.prisma.myReward.delete({ where: { id: reward.id } });
-        }
     }
 
     async approveRewards(adminId: number, rewardIds: number[]) {
@@ -231,5 +171,26 @@ export class RewardService {
             results.push({ rewardId, updated });
         }
         return results;
+    }
+
+    async deleteRewards(adminId: number, rewardIds: number[]) {
+        await this.checkAdmin(adminId);
+
+        if (!rewardIds || rewardIds.length === 0) {
+            throw new ForbiddenException('No reward IDs provided');
+        }
+
+        const results = [];
+        for (const rewardId of rewardIds) {
+            const reward = await this.prisma.myReward.findUnique({ where: { id: rewardId } });
+            if (!reward) {
+                results.push({ rewardId, error: 'Reward not found' });
+                continue;
+            }
+            await this.prisma.myReward.delete({ where: { id: rewardId } });
+            results.push({ rewardId, deleted: true });
+        }
+
+        return { message: 'Delete process completed', results };
     }
 }

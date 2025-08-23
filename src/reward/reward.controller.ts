@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Patch, Body, Request, UseGuards, ParseIntPipe, Query, Delete } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Body, Request, UseGuards, ParseIntPipe, Query, Delete, Req } from '@nestjs/common';
 import { RewardService } from './reward.service';
 import { AuthGuard } from '@nestjs/passport';
 
@@ -30,22 +30,7 @@ export class RewardController {
         });
     }
 
-
-    @Patch(':id/approve')
-    approveReward(@Request() req, @Param('id', ParseIntPipe) id: number) {
-        return this.rewardService.approveReward(req.user.id, id);
-    }
-
-    @Patch(':id/reject')
-    rejectReward(
-        @Request() req,
-        @Param('id', ParseIntPipe) id: number,
-        @Body('note') note?: string,
-    ) {
-        return this.rewardService.rejectReward(req.user.id, id, note);
-    }
-
-    @Patch('approve-many')
+    @Patch('approve')
     approveRewards(
         @Request() req,
         @Body('rewardIds') rewardIds: number[]
@@ -53,7 +38,7 @@ export class RewardController {
         return this.rewardService.approveRewards(req.user.id, rewardIds);
     }
 
-    @Patch('reject-many')
+    @Patch('reject')
     rejectRewards(
         @Request() req,
         @Body('rewardIds') rewardIds: number[],
@@ -62,8 +47,12 @@ export class RewardController {
         return this.rewardService.rejectRewards(req.user.id, rewardIds, note);
     }
 
-    @Delete('delete-rejected')
-    deleteRejectedRewards(@Request() req) {
-        return this.rewardService.deleteRejectedRewards(req.user.id);
+    @Delete()
+    async deleteRewards(
+        @Req() req,
+        @Body('rewardIds') rewardIds: number[],
+    ) {
+        const adminId = req.user.id;
+        return this.rewardService.deleteRewards(adminId, rewardIds);
     }
 }
