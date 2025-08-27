@@ -13,8 +13,17 @@ export class TransactionService {
         }
     }
 
+    async getAllTransactions() {
+        return this.prisma.transaction.findMany({
+          orderBy: { date: 'desc' },
+          include: {
+            user: { select: { id: true, enName: true, arName: true, email: true } },
+            
+          }
+        });
+      }
     async getTransactions(
-        currentUserId: number,
+        currentUserId: number = 1,
         page: number = 1,
         searchFilters?: {
             limit?: number;

@@ -7,7 +7,12 @@ import { AuthGuard } from '@nestjs/passport';
 @UseGuards(AuthGuard('jwt'))
 export class UsersController {
     constructor(private readonly usersService: UsersService) { }
-
+    @Get('all-users')
+    getAllUsers() {
+        return this.usersService.getAllUsers(1, 1, {
+            limit: 1000,
+        });
+    }
     // Get users with pagination & filters
     @Get(":page")
     getUsers(
@@ -63,4 +68,5 @@ export class UsersController {
             Number(price)
         );
     }
+    
 }

@@ -6,7 +6,10 @@ import { AuthGuard } from '@nestjs/passport';
 @UseGuards(AuthGuard('jwt'))
 export class TransactionController {
     constructor(private readonly transactionService: TransactionService) { }
-
+    @Get('all-transactions')
+    getAllTransactions() {  
+      return this.transactionService.getAllTransactions();
+    }   
     @Get(":page")
     getTransactions(
         @Param('page') page: number,
