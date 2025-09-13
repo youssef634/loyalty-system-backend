@@ -10,14 +10,22 @@ export class SettingsService {
         if (!user) throw new ForbiddenException('User not found');
 
         if (user.role === 'ADMIN') {
-            // Admin gets all settings
-            return this.prisma.settings.findUnique({ where: { id: 1 } });
+            // Admin gets global settings (any admin's settings)
+            return this.prisma.settings.findFirst({
+                where: {
+                    user: { role: 'ADMIN' }
+                }
+            });
         } else {
             // User gets their own settings if exists
             let settings = await this.prisma.settings.findUnique({ where: { userId } });
             if (!settings) {
-                // If not exist, return admin settings (id: 1)
-                settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+                // If not exist, return global admin settings
+                settings = await this.prisma.settings.findFirst({
+                    where: {
+                        user: { role: 'ADMIN' }
+                    }
+                });
             }
             return settings;
         }
@@ -28,28 +36,41 @@ export class SettingsService {
         if (!user) throw new ForbiddenException('User not found');
 
         if (user.role === 'ADMIN') {
-            // Admin updates global settings (id: 1)
+            // Admin updates global settings - use userId instead of fixed id
             const { timezone, enCurrency, arCurrency, pointsPerDollar, pointsPerIQD } = body;
-            return this.prisma.settings.upsert({
-                where: { id: 1 },
-                update: {
-                    timezone: timezone || undefined,
-                    enCurrency: enCurrency || undefined,
-                    arCurrency: arCurrency || undefined,
-                    pointsPerDollar: pointsPerDollar || undefined,
-                    pointsPerIQD: pointsPerIQD || undefined,
-                },
-                create: {
-                    timezone: timezone || "UTC",
-                    enCurrency: enCurrency || "USD",
-                    arCurrency: arCurrency || "الدولار الأمريكي",
-                    pointsPerDollar: pointsPerDollar || 10,
-                    pointsPerIQD: pointsPerIQD || 1,
-                    user: {
-                        connect: { id: userId }
-                    }
-                },
+            
+            // First, try to find existing global settings (any admin's settings)
+            const existingGlobalSettings = await this.prisma.settings.findFirst({
+                where: {
+                    user: { role: 'ADMIN' }
+                }
             });
+
+            if (existingGlobalSettings) {
+                // Update existing global settings
+                return this.prisma.settings.update({
+                    where: { id: existingGlobalSettings.id },
+                    data: {
+                        timezone: timezone || undefined,
+                        enCurrency: enCurrency || undefined,
+                        arCurrency: arCurrency || undefined,
+                        pointsPerDollar: pointsPerDollar || undefined,
+                        pointsPerIQD: pointsPerIQD || undefined,
+                    }
+                });
+            } else {
+                // Create new global settings for this admin
+                return this.prisma.settings.create({
+                    data: {
+                        timezone,
+                        enCurrency,
+                        arCurrency,
+                        pointsPerDollar,
+                        pointsPerIQD,
+                        userId: userId
+                    }
+                });
+            }
         } else {
             // User can only update their timezone
             const { timezone } = body;
