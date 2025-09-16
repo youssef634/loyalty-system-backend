@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service/prisma.service';
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class InvoiceService {
@@ -49,6 +50,10 @@ export class InvoiceService {
             if (filters.maxPoints) where.points.lte = Number(filters.maxPoints);
         }
 
+        // 🔹 Get system timezone from settings
+        const settings = await this.prisma.settings.findFirst();
+        const timezone = settings?.timezone || 'UTC';
+
         const totalInvoices = await this.prisma.invoice.count({ where });
         const totalPages = Math.ceil(totalInvoices / take);
 
@@ -80,11 +85,19 @@ export class InvoiceService {
             this.prisma.invoice.count({ where }),
         ]);
 
+        // 🔹 Format createdAt
+        const formattedData = data.map((invoice) => ({
+            ...invoice,
+            formattedDate: DateTime.fromJSDate(invoice.createdAt, { zone: 'utc' })
+                .setZone(timezone)
+                .toFormat('MMM dd, yyyy, hh:mm a'),
+        }));
+
         return {
             totalInvoices,
             totalPages,
             currentPage: page,
-            data,
+            data: formattedData,
         };
     }
 
@@ -115,6 +128,15 @@ export class InvoiceService {
             throw new NotFoundException(`Invoice with id ${id} not found`);
         }
 
-        return invoice;
+        // 🔹 Get timezone
+        const settings = await this.prisma.settings.findFirst();
+        const timezone = settings?.timezone || 'UTC';
+
+        return {
+            ...invoice,
+            formattedDate: DateTime.fromJSDate(invoice.createdAt, { zone: 'utc' })
+                .setZone(timezone)
+                .toFormat('MMM dd, yyyy, hh:mm a'),
+        };
     }
 }

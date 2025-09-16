@@ -129,6 +129,7 @@ model Invoice {
   phone      String?
   email      String?
   totalPrice Float
+  discount   Float?        @default(0)
   points     Int           @default(0)
   createdAt  DateTime      @default(now())
 

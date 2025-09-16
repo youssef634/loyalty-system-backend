@@ -35,6 +35,10 @@
     "class-validator": "^0.14.2",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.5",
+    "escpos": "^3.0.0-alpha.6",
+    "escpos-buffer": "^4.1.0",
+    "escpos-file": "^1.0.0",
+    "escpos-usb": "^3.0.0-alpha.4",
     "fast-csv": "^5.0.5",
     "jimp": "^1.6.0",
     "jsqr": "^1.4.0",
@@ -48,7 +52,8 @@
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
-    "sharp": "^0.34.3"
+    "sharp": "^0.34.3",
+    "write-file-queue": "^0.0.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
