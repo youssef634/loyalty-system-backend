@@ -24,7 +24,7 @@ export class PosService {
       throw new BadRequestException('Invoice must have at least one item');
     }
 
-    const settings = await this.prisma.settings.findFirst();
+   const settings = await this.prisma.settings.findUnique({ where: { userId: 1 } });
     if (!settings) {
       throw new NotFoundException('Settings not found. Please configure settings first.');
     }

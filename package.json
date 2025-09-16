@@ -38,6 +38,8 @@
     "escpos": "^3.0.0-alpha.6",
     "escpos-buffer": "^4.1.0",
     "escpos-file": "^1.0.0",
+    "escpos-network": "^3.0.0-alpha.5",
+    "escpos-serialport": "^3.0.0-alpha.4",
     "escpos-usb": "^3.0.0-alpha.4",
     "fast-csv": "^5.0.5",
     "jimp": "^1.6.0",

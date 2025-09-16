@@ -117,7 +117,10 @@ model Settings {
   enCurrency          String
   arCurrency          String
   pointsPerDollar     Int     @default(10)
-  pointsPerIQD        Int     @default(1) 
+  pointsPerIQD        Int     @default(1)
+  printerType         PrinterType @default(USB)
+  printerIp           String? 
+  port                Int?  @default(9100)
   updatedAt           DateTime @updatedAt
 
   user                User    @relation(fields: [userId], references: [id])
@@ -161,4 +164,9 @@ enum RewardStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum PrinterType {
+  USB
+  LAN
 }
