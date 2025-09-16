@@ -1,0 +1,14 @@
+*** LOYALTY RECEIPT ***
+Invoice #8
+Date: Sep 16, 2025, 07:13 PM
+Customer: Youssef khaled
+--------------------------------------
+Item               Price   Qty   Total
+--------------------------------------
+Cappuccino         100.00   x2   200.00
+--------------------------------------
+SUBTOTAL: 200.00
+DISCOUNT: 10%
+TOTAL:    180.00
+POINTS EARNED: 2000
+Thank you for your purchase!

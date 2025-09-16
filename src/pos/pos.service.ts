@@ -1,46 +1,46 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service/prisma.service';
+import { PrintService } from './print.service';
 
 @Injectable()
 export class PosService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private printService: PrintService,
+  ) { }
 
   async createInvoice(data: {
     userId?: number;
     phone?: string;
     email?: string;
     totalPrice: number;
+    discount?: number;  
     items: { productId: number; type: 'cafe' | 'restaurant'; quantity: number; price: number; total: number }[];
   }) {
     if (!data.totalPrice || data.totalPrice <= 0) {
       throw new BadRequestException('Invalid total price');
     }
-
     if (!data.items || data.items.length === 0) {
       throw new BadRequestException('Invoice must have at least one item');
     }
 
-    // 🔹 Get settings
-    const settings = await this.prisma.settings.findFirst();
+   const settings = await this.prisma.settings.findUnique({ where: { userId: 1 } });
     if (!settings) {
       throw new NotFoundException('Settings not found. Please configure settings first.');
     }
 
-    const selectedCurrency = settings.enCurrency;
+    // 👇 Calculate pre-discount total
+    const preDiscountTotal = data.items.reduce((sum, item) => sum + item.total, 0);
 
-    // 🔹 Calculate points
+    // 👇 Points based on pre-discount total
     let points = 0;
-    if (selectedCurrency === 'USD') {
-      points = Math.floor(data.totalPrice * settings.pointsPerDollar);
-    } else if (selectedCurrency === 'IQD') {
-      points = Math.floor(data.totalPrice * settings.pointsPerIQD);
-    } else {
-      throw new BadRequestException('Invalid currency. Use USD or IQD.');
+    if (settings.enCurrency === 'USD') {
+      points = Math.floor(preDiscountTotal * settings.pointsPerDollar);
+    } else if (settings.enCurrency === 'IQD') {
+      points = Math.floor(preDiscountTotal * settings.pointsPerIQD);
     }
 
     let user = null;
-
-    // 🔹 If user info provided → check existence BEFORE creating invoice
     if (data.userId || data.phone || data.email) {
       if (data.userId) {
         user = await this.prisma.user.findUnique({ where: { id: data.userId } });
@@ -49,19 +49,17 @@ export class PosService {
       } else if (data.email) {
         user = await this.prisma.user.findUnique({ where: { email: data.email } });
       }
-
-      if (!user) {
-        throw new NotFoundException('User not found with given identifier');
-      }
+      if (!user) throw new NotFoundException('User not found with given identifier');
     }
 
-    // 🔹 Create invoice
+    // ✅ Create invoice (save discount too)
     const invoice = await this.prisma.invoice.create({
       data: {
         userId: user?.id || null,
-        phone:  user?.phone || null,
-        email:  user?.email || null,
-        totalPrice: data.totalPrice,
+        phone: user?.phone || null,
+        email: user?.email || null,
+        totalPrice: data.totalPrice, // after discount
+        discount: data.discount ?? 0, // save discount
         points,
         items: {
           create: data.items.map((item) => ({
@@ -73,13 +71,19 @@ export class PosService {
           })),
         },
       },
-      include: { items: true },
+      include: {
+        items: {
+          include: {
+            cafeProduct: true,
+            restaurantProduct: true,
+          },
+        },
+      },
     });
 
     let transaction = null;
     let updatedUser = null;
 
-    // 🔹 If user exists → create transaction FIRST then update user points
     if (user) {
       transaction = await this.prisma.transaction.create({
         data: {
@@ -97,21 +101,12 @@ export class PosService {
       updatedUser = await this.prisma.user.update({
         where: { id: user.id },
         data: { points: user.points + transaction.points },
-        select: {
-          id: true,
-          enName: true,
-          arName: true,
-          email: true,
-          phone: true,
-          role: true,
-          points: true,
-          profileImage: true,
-          qrCode: true,
-          createdAt: true,
-        },
       });
     }
 
-    return { invoice, transaction, updatedUser };
+    // ✅ Print receipt
+    const receiptFile = await this.printService.printInvoice(invoice.id);
+
+    return { invoice, transaction, updatedUser, receiptFile };
   }
 }

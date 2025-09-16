@@ -36,14 +36,12 @@ export class SettingsService {
         if (!user) throw new ForbiddenException('User not found');
 
         if (user.role === 'ADMIN') {
-            // Admin updates global settings - use userId instead of fixed id
-            const { timezone, enCurrency, arCurrency, pointsPerDollar, pointsPerIQD } = body;
-            
-            // First, try to find existing global settings (any admin's settings)
+            // Admin updates global settings
+            const { timezone, enCurrency, arCurrency, pointsPerDollar, pointsPerIQD, printerType, printerIp } = body;
+
+            // Find existing global settings (any admin's settings)
             const existingGlobalSettings = await this.prisma.settings.findFirst({
-                where: {
-                    user: { role: 'ADMIN' }
-                }
+                where: { user: { role: 'ADMIN' } }
             });
 
             if (existingGlobalSettings) {
@@ -56,6 +54,8 @@ export class SettingsService {
                         arCurrency: arCurrency || undefined,
                         pointsPerDollar: pointsPerDollar || undefined,
                         pointsPerIQD: pointsPerIQD || undefined,
+                        printerType: printerType || undefined,
+                        printerIp: printerType === 'LAN' ? printerIp : null, // only save IP if LAN
                     }
                 });
             } else {
@@ -67,7 +67,9 @@ export class SettingsService {
                         arCurrency,
                         pointsPerDollar,
                         pointsPerIQD,
-                        userId: userId
+                        printerType: printerType || 'USB',
+                        printerIp: printerType === 'LAN' ? printerIp : null,
+                        userId
                     }
                 });
             }
@@ -75,10 +77,13 @@ export class SettingsService {
             // User can only update their timezone
             const { timezone } = body;
             if (!timezone) throw new ForbiddenException('Only timezone can be updated');
+
             let settings = await this.prisma.settings.findUnique({ where: { userId } });
             if (!settings) {
                 // Copy admin settings, but set user's timezone
-                const adminSettings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+                const adminSettings = await this.prisma.settings.findFirst({
+                    where: { user: { role: 'ADMIN' } }
+                });
                 if (!adminSettings) throw new ForbiddenException('Admin settings not found');
                 return this.prisma.settings.create({
                     data: {
@@ -88,9 +93,12 @@ export class SettingsService {
                         arCurrency: adminSettings.arCurrency,
                         pointsPerDollar: adminSettings.pointsPerDollar,
                         pointsPerIQD: adminSettings.pointsPerIQD,
+                        printerType: adminSettings.printerType,
+                        printerIp: adminSettings.printerIp,
                     },
                 });
             }
+
             return this.prisma.settings.update({
                 where: { userId },
                 data: { timezone },

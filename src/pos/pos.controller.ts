@@ -1,11 +1,13 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { PosService } from './pos.service';
 import { AuthGuard } from '@nestjs/passport';
+import { PrintService } from './print.service';
 
 @Controller('pos')
 @UseGuards(AuthGuard('jwt'))
 export class PosController {
-  constructor(private readonly posService: PosService) {}
+  constructor(private readonly posService: PosService,
+    private readonly printService: PrintService) { }
 
   @Post()
   async createInvoice(
@@ -14,10 +16,17 @@ export class PosController {
       userId?: number;
       phone?: string;
       email?: string;
-      totalPrice: number;
-      items: { productId: number; type: 'cafe' | 'restaurant'; quantity: number; price: number; total: number}[];
+      totalPrice: number; 
+      discount?: number;
+      items: { productId: number; type: 'cafe' | 'restaurant'; quantity: number; price: number; total: number }[];
     },
   ) {
     return this.posService.createInvoice(body);
+  }
+
+  /** 🔹 GET /pos/print/:id → print invoice by id */
+  @Get('print/:id')
+  async printInvoice(@Param('id', ParseIntPipe) invoiceId: number) {
+    return this.printService.printInvoice(invoiceId);
   }
 }
