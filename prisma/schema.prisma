@@ -30,6 +30,7 @@ model User {
   resetPasswordTokens ResetPasswordToken[]
   myRewards           MyReward[]
   settings            Settings?
+  invoices            Invoice[]
 }
 
 model ResetPasswordToken {
@@ -53,6 +54,7 @@ model CafeProduct {
   type       String  @default("cafe")
   myRewards  MyReward[]
   transactions        Transaction[]
+  invoice      InvoiceItem[]
 }
 
 model RestaurantProduct {
@@ -65,6 +67,7 @@ model RestaurantProduct {
   type       String  @default("restaurant")
   myRewards  MyReward[]
   transactions        Transaction[]
+  invoice      InvoiceItem[]
 }
 
 model Reward {
@@ -93,15 +96,18 @@ model MyReward {
 model Transaction {
   id        Int     @id @default(autoincrement())
   type      String  // "earn" or "redeem"
-  currency  Json  
+  currency  Json 
   points    Int
   date      DateTime @default(now())
   userId    Int
   cafeProductId Int?   
   restaurantProductId Int?    
-  cafeProduct       CafeProduct?      @relation(fields: [cafeProductId], references: [id])
+  invoiceId    Int? @unique
+
+  cafeProduct       CafeProduct?       @relation(fields: [cafeProductId], references: [id])
   restaurantProduct RestaurantProduct? @relation(fields: [restaurantProductId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  user              User               @relation(fields: [userId], references: [id])
+  invoice           Invoice?           @relation(fields: [invoiceId], references: [id])
 }
 
 model Settings {
@@ -117,7 +123,33 @@ model Settings {
   user                User    @relation(fields: [userId], references: [id])
 }
 
+model Invoice {
+  id         Int           @id @default(autoincrement())
+  userId     Int?
+  phone      String?
+  email      String?
+  totalPrice Float
+  points     Int           @default(0)
+  createdAt  DateTime      @default(now())
 
+  user       User?         @relation(fields: [userId], references: [id])
+  items      InvoiceItem[]
+  transaction Transaction? // 0 or 1 transaction
+}
+
+model InvoiceItem {
+  id                  Int     @id @default(autoincrement())
+  invoiceId           Int
+  cafeProductId       Int?
+  restaurantProductId Int?
+  quantity            Int     @default(1)
+  price               Float   // store product price at purchase time (important!)
+  total               Float   // price * quantity
+
+  invoice             Invoice @relation(fields: [invoiceId], references: [id])
+  cafeProduct         CafeProduct?      @relation(fields: [cafeProductId], references: [id])
+  restaurantProduct   RestaurantProduct? @relation(fields: [restaurantProductId], references: [id])
+}
 
 enum Role {
   ADMIN
