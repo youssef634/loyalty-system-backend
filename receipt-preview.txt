@@ -1,14 +1,15 @@
 *** LOYALTY RECEIPT ***
-Invoice #8
-Date: Sep 16, 2025, 07:13 PM
-Customer: Youssef khaled
+Invoice #11
+Date: Sep 16, 2025, 08:25 PM
+Customer: Abdelrahman Gomaa 
 --------------------------------------
 Item               Price   Qty   Total
 --------------------------------------
-Cappuccino         100.00   x2   200.00
+coffee              50.00   x1    50.00
+Burger              60.00   x2   120.00
 --------------------------------------
-SUBTOTAL: 200.00
+SUBTOTAL: 170.00
 DISCOUNT: 10%
-TOTAL:    180.00
-POINTS EARNED: 2000
+TOTAL:    153.00
+POINTS EARNED: 1700
 Thank you for your purchase!

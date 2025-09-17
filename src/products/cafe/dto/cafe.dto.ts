@@ -20,6 +20,10 @@ export class CreateCafeProductDto {
   @IsString()
   image?: string;
 
+  @IsOptional()
+  @IsString()
+  category?: string;
+
   @IsNotEmpty()
   @Type(() => Number)
   @IsNumber()
@@ -51,6 +55,10 @@ export class UpdateCafeProductDto {
   @IsOptional()
   @IsString()
   image?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
 
   @IsOptional()
   @Type(() => Number)

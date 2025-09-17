@@ -1,25 +1,24 @@
 import { Type } from 'class-transformer';
 import { IsNotEmpty, IsNumber, IsOptional, IsString, Min, Matches } from 'class-validator';
 
-// Arabic regex: matches Arabic characters only
-const ARABIC_REGEX = /^[\u0600-\u06FF\s]+$/;
-// English regex: matches English letters only
-const ENGLISH_REGEX = /^[A-Za-z\s]+$/;
-
 export class CreateRestaurantProductDto {
   @IsNotEmpty()
   @IsString()
-  @Matches(ENGLISH_REGEX, { message: 'enName must contain only English letters' })
+  @Matches(/^[A-Za-z\s]+$/, { message: 'enName must contain only English letters' })
   enName: string;
 
   @IsNotEmpty()
   @IsString()
-  @Matches(ARABIC_REGEX, { message: 'arName must contain only Arabic letters' })
+  @Matches(/^[\u0600-\u06FF\s]+$/, { message: 'arName must contain only Arabic letters' })
   arName: string;
 
   @IsOptional()
   @IsString()
   image?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string; 
 
   @IsNotEmpty()
   @Type(() => Number)
@@ -37,17 +36,21 @@ export class CreateRestaurantProductDto {
 export class UpdateRestaurantProductDto {
   @IsOptional()
   @IsString()
-  @Matches(ENGLISH_REGEX, { message: 'enName must contain only English letters' })
+  @Matches(/^[A-Za-z\s]+$/, { message: 'enName must contain only English letters' })
   enName?: string;
 
   @IsOptional()
   @IsString()
-  @Matches(ARABIC_REGEX, { message: 'arName must contain only Arabic letters' })
+  @Matches(/^[\u0600-\u06FF\s]+$/, { message: 'arName must contain only Arabic letters' })
   arName?: string;
 
   @IsOptional()
   @IsString()
   image?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string; 
 
   @IsOptional()
   @Type(() => Number)
