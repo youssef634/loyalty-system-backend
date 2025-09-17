@@ -12,7 +12,7 @@ export class RolesController {
   constructor(private rolesService: RolesService) {}
 
   @Post(':role')
-  @Permissions('roles')
+  @Permissions('permissions')
   createPermissions(
     @Param('role') role: Role,
     @Body() body: { pages: string[] },
@@ -21,7 +21,7 @@ export class RolesController {
   }
 
   @Patch(':role')
-  @Permissions('roles')
+  @Permissions('permissions')
   updatePermissions(
     @Param('role') role: Role,
     @Body() body: { pages: string[] },
@@ -30,7 +30,7 @@ export class RolesController {
   }
 
   @Get(':role')
-  @Permissions('roles')
+  @Permissions('permissions')
   getPermissions(@Param('role') role: Role) {
     return this.rolesService.getPermissions(role);
   }
