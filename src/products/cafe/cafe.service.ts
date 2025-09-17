@@ -33,6 +33,7 @@ export class CafeProductsService {
       arName?: string;
       minPoints?: number;
       maxPoints?: number;
+      category?: string;
     },
   ) {
 
@@ -45,6 +46,8 @@ export class CafeProductsService {
       where.enName = { contains: filters.enName, mode: 'insensitive' };
     if (filters?.arName)
       where.arName = { contains: filters.arName, mode: 'insensitive' };
+    if (filters?.category)
+      where.category = { contains: filters.category, mode: 'insensitive' };
 
     if (filters?.minPoints !== undefined || filters?.maxPoints !== undefined) {
       where.points = {};

@@ -52,6 +52,7 @@ model CafeProduct {
   price      Float
   points     Int
   type       String  @default("cafe")
+  category   String? 
   myRewards  MyReward[]
   transactions        Transaction[]
   invoice      InvoiceItem[]
@@ -65,6 +66,7 @@ model RestaurantProduct {
   price      Float
   points     Int
   type       String  @default("restaurant")
+  category   String? 
   myRewards  MyReward[]
   transactions        Transaction[]
   invoice      InvoiceItem[]
@@ -103,6 +105,7 @@ model Transaction {
   cafeProductId Int?   
   restaurantProductId Int?    
   invoiceId    Int? @unique
+  status    TransactionStatus @default(COMPLETED)
 
   cafeProduct       CafeProduct?       @relation(fields: [cafeProductId], references: [id])
   restaurantProduct RestaurantProduct? @relation(fields: [restaurantProductId], references: [id])
@@ -169,4 +172,9 @@ enum RewardStatus {
 enum PrinterType {
   USB
   LAN
+}
+
+enum TransactionStatus {
+  COMPLETED
+  CANCELLED
 }

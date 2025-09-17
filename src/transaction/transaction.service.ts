@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service/prisma.service';
 import { DateTime } from 'luxon';
+import { TransactionStatus } from '@prisma/client';
 
 @Injectable()
 export class TransactionService {
@@ -15,13 +16,14 @@ export class TransactionService {
 
     async getAllTransactions() {
         return this.prisma.transaction.findMany({
-          orderBy: { date: 'desc' },
-          include: {
-            user: { select: { id: true, enName: true, arName: true, email: true } },
-            
-          }
+            orderBy: { date: 'desc' },
+            include: {
+                user: { select: { id: true, enName: true, arName: true, email: true } },
+
+            }
         });
-      }
+    }
+
     async getTransactions(
         currentUserId: number = 1,
         page: number = 1,
@@ -37,6 +39,7 @@ export class TransactionService {
             email?: string;
             cafeProductId?: number;
             restaurantProductId?: number;
+            status?: TransactionStatus;
         }
     ) {
         const user = await this.prisma.user.findUnique({ where: { id: currentUserId } });
@@ -77,16 +80,19 @@ export class TransactionService {
         }
 
         if (searchFilters?.userId) filters.userId = searchFilters.userId;
-        
+
         // Email filter - search by user email
         if (searchFilters?.email) {
             filters.user = {
                 email: { contains: searchFilters.email, mode: 'insensitive' }
             };
         }
-        
+
         if (searchFilters?.cafeProductId) filters.cafeProductId = searchFilters.cafeProductId;
         if (searchFilters?.restaurantProductId) filters.restaurantProductId = searchFilters.restaurantProductId;
+        if (searchFilters?.status) {
+            filters.status = searchFilters.status.toUpperCase();
+        }
 
         // If not admin, restrict to only current user's transactions
         if (!isAdmin) {
@@ -133,5 +139,37 @@ export class TransactionService {
         if (!transaction) throw new NotFoundException('Transaction not found');
 
         return this.prisma.transaction.delete({ where: { id: transactionId } });
+    }
+
+    async cancelTransaction(adminUserId: number, transactionId: number) {
+        // Only admin can cancel
+        await this.checkAdmin(adminUserId);
+
+        // Find the transaction
+        const transaction = await this.prisma.transaction.findUnique({
+            where: { id: transactionId },
+            include: { user: true }
+        });
+
+        if (!transaction) throw new NotFoundException('Transaction not found');
+        if (transaction.status === 'CANCELLED') throw new ForbiddenException('Transaction is already cancelled');
+
+        // Revert points based on type
+        const userPointsUpdate = transaction.type === 'earn'
+            ? { points: transaction.user.points - transaction.points }
+            : { points: transaction.user.points + transaction.points };
+
+        await this.prisma.user.update({
+            where: { id: transaction.userId },
+            data: userPointsUpdate
+        });
+
+        // Mark transaction as cancelled
+        const cancelledTransaction = await this.prisma.transaction.update({
+            where: { id: transactionId },
+            data: { status: 'CANCELLED' }
+        });
+
+        return cancelledTransaction;
     }
 }

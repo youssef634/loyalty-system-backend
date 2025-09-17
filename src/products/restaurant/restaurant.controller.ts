@@ -19,6 +19,7 @@ export class RestaurantProductsController {
         @Query('arName') arName?: string,
         @Query('minPoints') minPoints?: number,
         @Query('maxPoints') maxPoints?: number,
+        @Query('category') category?: string,
     ) {
         return this.restaurantProductsService.getProducts(Number(page), {
             limit: limit ? Number(limit) : undefined,
@@ -27,6 +28,7 @@ export class RestaurantProductsController {
             arName,
             minPoints: minPoints ? Number(minPoints) : undefined,
             maxPoints: maxPoints ? Number(maxPoints) : undefined,
+            category,
         });
     }
 

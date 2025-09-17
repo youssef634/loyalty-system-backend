@@ -19,8 +19,17 @@ export class CafeProductsController {
         @Query('arName') arName?: string,
         @Query('minPoints') minPoints?: number,
         @Query('maxPoints') maxPoints?: number,
+        @Query('category') category?: string,
     ) {
-        return this.service.getProducts(page, {limit, id, enName, arName, minPoints, maxPoints });
+        return this.service.getProducts(Number(page), {
+            limit: limit ? Number(limit) : undefined,
+            id: id ? Number(id) : undefined,
+            enName,
+            arName,
+            minPoints: minPoints ? Number(minPoints) : undefined,
+            maxPoints: maxPoints ? Number(maxPoints) : undefined,
+            category,
+        });
     }
 
     @Post()
