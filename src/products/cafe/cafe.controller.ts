@@ -4,9 +4,11 @@ import * as multer from 'multer';
 import { AuthGuard } from '@nestjs/passport';
 import { CafeProductsService } from './cafe.service';
 import { CreateCafeProductDto, UpdateCafeProductDto } from './dto/cafe.dto';
+import { Permissions } from '@src/common/permissions.decorator';
+import { RolesGuard } from '@src/common/roles.guard';
 
 @Controller('cafe-products')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class CafeProductsController {
     constructor(private readonly service: CafeProductsService) { }
 
@@ -33,6 +35,7 @@ export class CafeProductsController {
     }
 
     @Post()
+    @Permissions('products')
     @UseInterceptors(FileInterceptor('image', { storage: multer.memoryStorage() }))
     addProduct(
         @Req() req,
@@ -43,6 +46,7 @@ export class CafeProductsController {
     }
 
     @Patch(':id')
+    @Permissions('products')
     @UseInterceptors(FileInterceptor('image', { storage: multer.memoryStorage() }))
     updateProduct(
         @Req() req,
@@ -59,6 +63,7 @@ export class CafeProductsController {
     }
 
     @Delete(':id')
+    @Permissions('products')
     deleteProduct(@Req() req, @Param('id') id: string) {
         return this.service.deleteProduct(req.user.id, Number(id));
     }

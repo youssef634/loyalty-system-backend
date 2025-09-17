@@ -33,6 +33,14 @@ model User {
   invoices            Invoice[]
 }
 
+model RolePermission {
+  id       Int      @id @default(autoincrement())
+  role     Role
+  page     String
+
+  @@unique([role, page])
+}
+
 model ResetPasswordToken {
   id         Int      @id @default(autoincrement())
   userId     Int
@@ -160,6 +168,8 @@ model InvoiceItem {
 
 enum Role {
   ADMIN
+  ACCOUNTANT
+  CASHIER
   USER
 }
 

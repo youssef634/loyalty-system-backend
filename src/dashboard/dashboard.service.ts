@@ -13,7 +13,7 @@ export class DashboardService {
             throw new ForbiddenException('User not found');
         }
 
-        if (user.role === Role.ADMIN) {
+        if (user.role !== Role.USER) {
             // 🔹 Admin Dashboard
             // 1. Number of customers
             const customersCount = await this.prisma.user.count({ where: { role: 'USER' } });
@@ -220,7 +220,7 @@ export class DashboardService {
                 throw new Error('Invalid period');
         }
 
-        if (user.role === Role.ADMIN) {
+        if (user.role !== Role.USER) {
             // 🔹 Admin → stats across all users
             const transactionsCount = await this.prisma.transaction.count({
                 where: { date: { gte: from, lte: to }, user: { role: 'USER' } },

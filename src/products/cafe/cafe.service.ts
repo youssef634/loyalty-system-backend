@@ -14,16 +14,6 @@ import axios from 'axios';
 export class CafeProductsService {
   constructor(private prisma: PrismaService) { }
 
-  private async checkAdmin(userId: number) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
-
-    if (!user) throw new NotFoundException('Current user not found');
-    if (user.role !== 'ADMIN') throw new ForbiddenException('Admins only');
-  }
-
   async getProducts(
     page: number = 1,
     filters?: {
@@ -84,8 +74,6 @@ export class CafeProductsService {
     data: CreateCafeProductDto,
     file?: Express.Multer.File,
   ) {
-    await this.checkAdmin(currentUserId);
-
     const uploadDir = this.getCafeProductsUploadPath();
     let imageUrl: string | undefined;
 
@@ -140,8 +128,6 @@ export class CafeProductsService {
     data: UpdateCafeProductDto,
     file?: Express.Multer.File,
   ) {
-    await this.checkAdmin(currentUserId);
-
     const product = await this.prisma.cafeProduct.findUnique({ where: { id } });
     if (!product) throw new NotFoundException('Product not found');
 
@@ -215,7 +201,6 @@ export class CafeProductsService {
   }
 
   async deleteProduct(currentUserId: number, id: number) {
-    await this.checkAdmin(currentUserId);
 
     const product = await this.prisma.cafeProduct.findUnique({ where: { id } });
     if (!product) throw new NotFoundException('Product not found');

@@ -7,13 +7,6 @@ import { DateTime } from 'luxon';
 export class RewardService {
     constructor(private prisma: PrismaService) { }
 
-    private async checkAdmin(userId: number) {
-        const user = await this.prisma.user.findUnique({ where: { id: userId } });
-        if (!user || user.role !== 'ADMIN') {
-            throw new ForbiddenException('Admins only');
-        }
-    }
-
     async getRewards(
         currentUserId: number,
         page: number = 1,
@@ -30,7 +23,7 @@ export class RewardService {
         const user = await this.prisma.user.findUnique({ where: { id: currentUserId } });
         if (!user) throw new ForbiddenException('User not found');
 
-        const isAdmin = user.role === 'ADMIN';
+        const isUser = user.role === 'USER';
 
         // Get timezone from settings (fallback UTC)
         let settings = await this.prisma.settings.findUnique({ where: { userId: currentUserId } });
@@ -63,8 +56,7 @@ export class RewardService {
 
         if (searchFilters?.userId) filters.userId = searchFilters.userId;
 
-        // If not admin → restrict to current user's rewards
-        if (!isAdmin) {
+        if (isUser) {
             filters.userId = currentUserId;
         }
 
@@ -82,7 +74,7 @@ export class RewardService {
             take: limit,
             orderBy: { date: 'desc' },
             include: {
-                user: isAdmin ? { select: { enName: true, arName: true } } : false,
+                user: { select: { enName: true, arName: true }},
                 cafeProduct: { select: { enName: true, arName: true, image: true } },
                 restaurantProduct: { select: { enName: true, arName: true, image: true } },
             },
@@ -106,8 +98,6 @@ export class RewardService {
     }
 
     async approveRewards(adminId: number, rewardIds: number[]) {
-        await this.checkAdmin(adminId);
-
         const results = [];
         for (const rewardId of rewardIds) {
             const reward = await this.prisma.myReward.findUnique({ where: { id: rewardId } });
@@ -136,8 +126,6 @@ export class RewardService {
     }
 
     async rejectRewards(adminId: number, rewardIds: number[], note?: string) {
-        await this.checkAdmin(adminId);
-
         const results = [];
         for (const rewardId of rewardIds) {
             const reward = await this.prisma.myReward.findUnique({
@@ -174,8 +162,6 @@ export class RewardService {
     }
 
     async deleteRewards(adminId: number, rewardIds: number[]) {
-        await this.checkAdmin(adminId);
-
         if (!rewardIds || rewardIds.length === 0) {
             throw new ForbiddenException('No reward IDs provided');
         }

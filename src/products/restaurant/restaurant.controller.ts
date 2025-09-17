@@ -4,9 +4,11 @@ import { RestaurantProductsService } from './restaurant.service';
 import { CreateRestaurantProductDto, UpdateRestaurantProductDto } from './dto/restaurant.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
+import { Permissions } from '@src/common/permissions.decorator';
+import { RolesGuard } from '@src/common/roles.guard';
 
 @Controller('restaurant-products')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class RestaurantProductsController {
     constructor(private readonly restaurantProductsService: RestaurantProductsService) { }
 
@@ -33,6 +35,7 @@ export class RestaurantProductsController {
     }
 
     @Post()
+    @Permissions('products')
     @UseInterceptors(FileInterceptor('image', { storage: multer.memoryStorage() }))
     addProduct(
         @Req() req,
@@ -43,6 +46,7 @@ export class RestaurantProductsController {
     }
 
     @Patch(':id')
+    @Permissions('products')
     @UseInterceptors(FileInterceptor('image', { storage: multer.memoryStorage() }))
     updateProduct(
         @Req() req,
@@ -59,6 +63,7 @@ export class RestaurantProductsController {
     }
 
     @Delete(':id')
+    @Permissions('products')
     deleteProduct(@Req() req, @Param('id') id: number) {
         return this.restaurantProductsService.deleteProduct(req.user.id, Number(id));
     }
