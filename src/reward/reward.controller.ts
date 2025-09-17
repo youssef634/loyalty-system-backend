@@ -1,9 +1,11 @@
 import { Controller, Get, Param, Patch, Body, Request, UseGuards, ParseIntPipe, Query, Delete, Req } from '@nestjs/common';
 import { RewardService } from './reward.service';
 import { AuthGuard } from '@nestjs/passport';
+import { Permissions } from '@src/common/permissions.decorator';
+import { RolesGuard } from '@src/common/roles.guard';
 
 @Controller('rewards')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class RewardController {
     constructor(private readonly rewardService: RewardService) { }
 
@@ -31,6 +33,7 @@ export class RewardController {
     }
 
     @Patch('approve')
+    @Permissions('rewards')
     approveRewards(
         @Request() req,
         @Body('rewardIds') rewardIds: number[]
@@ -39,6 +42,7 @@ export class RewardController {
     }
 
     @Patch('reject')
+    @Permissions('rewards')
     rejectRewards(
         @Request() req,
         @Body('rewardIds') rewardIds: number[],
@@ -48,6 +52,7 @@ export class RewardController {
     }
 
     @Delete()
+    @Permissions('rewards')
     async deleteRewards(
         @Req() req,
         @Body('rewardIds') rewardIds: number[],

@@ -7,13 +7,6 @@ import { TransactionStatus } from '@prisma/client';
 export class TransactionService {
     constructor(private prisma: PrismaService) { }
 
-    private async checkAdmin(userId: number) {
-        const user = await this.prisma.user.findUnique({ where: { id: userId } });
-        if (!user || user.role !== 'ADMIN') {
-            throw new ForbiddenException('Access denied. Admins only.');
-        }
-    }
-
     async getAllTransactions() {
         return this.prisma.transaction.findMany({
             orderBy: { date: 'desc' },
@@ -45,7 +38,7 @@ export class TransactionService {
         const user = await this.prisma.user.findUnique({ where: { id: currentUserId } });
         if (!user) throw new ForbiddenException('User not found');
 
-        const isAdmin = user.role === 'ADMIN';
+        const isUser = user.role === 'USER';
 
         // Get timezone from settings (fallback UTC)
         let settings = await this.prisma.settings.findUnique({ where: { userId: currentUserId } });
@@ -93,9 +86,8 @@ export class TransactionService {
         if (searchFilters?.status) {
             filters.status = searchFilters.status.toUpperCase();
         }
-
-        // If not admin, restrict to only current user's transactions
-        if (!isAdmin) {
+        
+        if (isUser) {
             filters.userId = currentUserId;
         }
 
@@ -133,7 +125,6 @@ export class TransactionService {
     }
 
     async deleteTransaction(currentUserId: number, transactionId: number) {
-        await this.checkAdmin(currentUserId);
 
         const transaction = await this.prisma.transaction.findUnique({ where: { id: transactionId } });
         if (!transaction) throw new NotFoundException('Transaction not found');
@@ -142,9 +133,6 @@ export class TransactionService {
     }
 
     async cancelTransaction(adminUserId: number, transactionId: number) {
-        // Only admin can cancel
-        await this.checkAdmin(adminUserId);
-
         // Find the transaction
         const transaction = await this.prisma.transaction.findUnique({
             where: { id: transactionId },

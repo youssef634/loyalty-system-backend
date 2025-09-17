@@ -14,16 +14,6 @@ import axios from 'axios';
 export class RestaurantProductsService {
   constructor(private prisma: PrismaService) { }
 
-  private async checkAdmin(userId: number) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
-
-    if (!user) throw new NotFoundException('Current user not found');
-    if (user.role !== 'ADMIN') throw new ForbiddenException('Admins only');
-  }
-
   async getProducts(
     page: number = 1,
     filters?: {
@@ -82,8 +72,6 @@ export class RestaurantProductsService {
     data: CreateRestaurantProductDto,
     file?: Express.Multer.File,
   ) {
-    await this.checkAdmin(currentUserId);
-
     const uploadDir = path.join(process.cwd(), 'uploads', 'restaurant-products');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -142,8 +130,6 @@ export class RestaurantProductsService {
     data: UpdateRestaurantProductDto,
     file?: Express.Multer.File,
   ) {
-    await this.checkAdmin(currentUserId);
-
     const product = await this.prisma.restaurantProduct.findUnique({ where: { id } });
     if (!product) throw new NotFoundException('Product not found');
 
@@ -219,8 +205,6 @@ export class RestaurantProductsService {
   }
 
   async deleteProduct(currentUserId: number, id: number) {
-    await this.checkAdmin(currentUserId);
-
     const product = await this.prisma.restaurantProduct.findUnique({ where: { id } });
     if (!product) throw new NotFoundException('Product not found');
 

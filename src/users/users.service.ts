@@ -11,15 +11,6 @@ import { DateTime } from 'luxon';
 export class UsersService {
     constructor(private prisma: PrismaService) { }
 
-    private async checkAdmin(userId: number) {
-        const user = await this.prisma.user.findUnique({
-            where: { id: userId },
-            select: { role: true }
-        });
-        if (!user) throw new NotFoundException('Current user not found');
-        if (user.role !== 'ADMIN') throw new ForbiddenException('Admins only');
-    }
-
     private getQrUploadPath() {
         const uploadDir = path.join(process.cwd(), 'uploads', 'qrcodes');
         if (!fs.existsSync(uploadDir)) {
@@ -40,7 +31,6 @@ export class UsersService {
     }
 
     async addUser(currentUserId: number, data: CreateUserDto) {
-        await this.checkAdmin(currentUserId);
 
         const existingUser = await this.prisma.user.findFirst({
             where: { OR: [{ email: data.email }, { phone: data.phone }] },
@@ -94,7 +84,6 @@ export class UsersService {
             phone?: string;
         },
     ) {
-        await this.checkAdmin(currentUserId);
 
         // Get timezone from settings
         let settings = await this.prisma.settings.findUnique({ where: { userId: currentUserId } });
@@ -153,7 +142,6 @@ export class UsersService {
     }
 
     async deleteUser(currentUserId: number, id: number) {
-        await this.checkAdmin(currentUserId);
         const user = await this.prisma.user.findUnique({ where: { id } });
         if (!user) throw new NotFoundException('User not found');
 
@@ -190,7 +178,6 @@ export class UsersService {
     }
 
     async updateUser(currentUserId: number, id: number, data: UpdateUserDto) {
-        await this.checkAdmin(currentUserId);
 
         const user = await this.prisma.user.findUnique({ where: { id } });
         if (!user) throw new NotFoundException('User not found');
@@ -243,7 +230,6 @@ export class UsersService {
         userId: number,
         price: number,
     ) {
-        await this.checkAdmin(currentUserId);
 
         const amount = Number(price);
         if (isNaN(amount) || amount <= 0) {

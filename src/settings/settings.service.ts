@@ -9,7 +9,7 @@ export class SettingsService {
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user) throw new ForbiddenException('User not found');
 
-        if (user.role === 'ADMIN') {
+        if (user.role !== 'USER') {
             // Admin gets global settings (any admin's settings)
             return this.prisma.settings.findFirst({
                 where: {
@@ -35,7 +35,7 @@ export class SettingsService {
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user) throw new ForbiddenException('User not found');
 
-        if (user.role === 'ADMIN') {
+        if (user.role !== 'USER') {
             // Admin updates global settings
             const { timezone, enCurrency, arCurrency, pointsPerDollar, pointsPerIQD, printerType, printerIp } = body;
 

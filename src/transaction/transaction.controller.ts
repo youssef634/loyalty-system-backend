@@ -1,14 +1,17 @@
 import { Controller, Get, Post, Delete, Query, Param, Request, ParseIntPipe, UseGuards, Res, Req } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { AuthGuard } from '@nestjs/passport';
-import { query } from 'express';
 import { TransactionStatus } from '@prisma/client';
+import { Permissions } from '@src/common/permissions.decorator';
+import { RolesGuard } from '@src/common/roles.guard';
 
 @Controller('transactions')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class TransactionController {
     constructor(private readonly transactionService: TransactionService) { }
+    
     @Get('all-transactions')
+    @Permissions('transactions')
     getAllTransactions() {
         return this.transactionService.getAllTransactions();
     }
@@ -46,6 +49,7 @@ export class TransactionController {
     }
 
     @Delete(':id')
+    @Permissions('transactions')
     deleteTransaction(
         @Request() req,
         @Param('id', ParseIntPipe) id: number
@@ -54,6 +58,7 @@ export class TransactionController {
     }
 
     @Post(':id/cancel')
+    @Permissions('transactions')
     async cancelTransaction(
         @Req() req,
         @Param('id', ParseIntPipe) transactionId: number
