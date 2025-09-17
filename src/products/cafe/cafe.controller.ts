@@ -4,8 +4,8 @@ import * as multer from 'multer';
 import { AuthGuard } from '@nestjs/passport';
 import { CafeProductsService } from './cafe.service';
 import { CreateCafeProductDto, UpdateCafeProductDto } from './dto/cafe.dto';
-import { Permissions } from '@src/common/permissions.decorator';
-import { RolesGuard } from '@src/common/roles.guard';
+import { Permissions } from '../../common/permissions.decorator';
+import { RolesGuard } from '../../common/roles.guard';
 
 @Controller('cafe-products')
 @UseGuards(AuthGuard('jwt'), RolesGuard)

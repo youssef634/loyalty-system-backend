@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service/prisma.service';
+import { PrismaService } from '../prisma/prisma.service/prisma.service';
 import { DateTime } from 'luxon';
 import { TransactionStatus } from '@prisma/client';
 

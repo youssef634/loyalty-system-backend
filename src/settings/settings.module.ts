@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SettingsService } from './settings.service';
 import { SettingsController } from './settings.controller';
-import { RolesModule } from '@src/roles/roles.module';
+import { RolesModule } from '../roles/roles.module';
 
 @Module({
   imports: [RolesModule],

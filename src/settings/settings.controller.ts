@@ -1,8 +1,8 @@
 import { Controller, Get, Put, Body, Request, UseGuards, Post } from '@nestjs/common';
 import { SettingsService } from './settings.service';
 import { AuthGuard } from '@nestjs/passport';
-import { Permissions } from '@src/common/permissions.decorator';
-import { RolesGuard } from '@src/common/roles.guard';
+import { Permissions } from '../common/permissions.decorator';
+import { RolesGuard } from '../common/roles.guard';
 
 @Controller('settings')
 @UseGuards(AuthGuard('jwt'), RolesGuard)

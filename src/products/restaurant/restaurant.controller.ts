@@ -4,8 +4,8 @@ import { RestaurantProductsService } from './restaurant.service';
 import { CreateRestaurantProductDto, UpdateRestaurantProductDto } from './dto/restaurant.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
-import { Permissions } from '@src/common/permissions.decorator';
-import { RolesGuard } from '@src/common/roles.guard';
+import { Permissions } from '../../common/permissions.decorator';
+import { RolesGuard } from '../../common/roles.guard';
 
 @Controller('restaurant-products')
 @UseGuards(AuthGuard('jwt'), RolesGuard)

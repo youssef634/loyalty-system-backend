@@ -46,7 +46,7 @@ export class UsersService {
                 phone: data.phone,
                 email: data.email,
                 password: hashedPassword,
-                role: data.role || 'USER',
+                role: 'USER',
                 points: Number(data.points) || 0,
                 createdAt: new Date()
             },
@@ -84,7 +84,6 @@ export class UsersService {
             phone?: string;
         },
     ) {
-
         // Get timezone from settings
         let settings = await this.prisma.settings.findUnique({ where: { userId: currentUserId } });
         if (!settings) {
@@ -94,7 +93,7 @@ export class UsersService {
         const timezone = settings?.timezone || 'UTC';
 
         const limit = searchFilters?.limit && searchFilters.limit > 0 ? searchFilters.limit : 10;
-        const filters: any = {};
+        const filters: any = { role: 'USER' };
 
         if (searchFilters?.id) filters.id = searchFilters.id;
         if (searchFilters?.enName) filters.enName = { contains: searchFilters.enName, mode: 'insensitive' };
@@ -143,7 +142,9 @@ export class UsersService {
 
     async deleteUser(currentUserId: number, id: number) {
         const user = await this.prisma.user.findUnique({ where: { id } });
-        if (!user) throw new NotFoundException('User not found');
+        if (!user || user.role !== 'USER') {
+            throw new ForbiddenException('Only USER role accounts are allowed here');
+        }
 
         // Delete profile image file if exists
         if (user.profileImage) {
@@ -178,9 +179,10 @@ export class UsersService {
     }
 
     async updateUser(currentUserId: number, id: number, data: UpdateUserDto) {
-
         const user = await this.prisma.user.findUnique({ where: { id } });
-        if (!user) throw new NotFoundException('User not found');
+        if (!user || user.role !== 'USER') {
+            throw new ForbiddenException('Only USER role accounts can be updated');
+        }
 
         const updateData = { ...data };
 
@@ -188,22 +190,17 @@ export class UsersService {
             updateData.password = await bcrypt.hash(data.password, 10);
         }
 
-        // Convert points to number if provided
         if (updateData.points) {
             updateData.points = Number(updateData.points);
         }
 
-        // If email changes → regenerate QR code
         if (data.email && data.email !== user.email) {
-            // Delete old QR code
             if (user.qrCode) {
                 const oldQrPath = path.join(process.cwd(), 'uploads', 'qrcodes', path.basename(user.qrCode));
                 if (fs.existsSync(oldQrPath)) {
                     fs.unlinkSync(oldQrPath);
                 }
             }
-
-            // Generate new QR code
             updateData.qrCode = await this.generateUserQrPng(id, data.email);
         }
 
@@ -231,6 +228,11 @@ export class UsersService {
         price: number,
     ) {
 
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user || user.role !== 'USER') {
+            throw new ForbiddenException('Only USER role accounts are allowed here');
+        }
+
         const amount = Number(price);
         if (isNaN(amount) || amount <= 0) {
             throw new BadRequestException('Price must be a positive number');
@@ -255,10 +257,6 @@ export class UsersService {
 
         // Calculate points to add
         const pointsToAdd = amount * pointsPerUnit;
-
-        // Find user
-        const user = await this.prisma.user.findUnique({ where: { id: userId } });
-        if (!user) throw new NotFoundException('User not found');
 
         // Update user points
         const updatedUser = await this.prisma.user.update({

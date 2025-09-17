@@ -1,8 +1,8 @@
 import { Controller, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { InvoiceService } from './invoice.service';
-import { Permissions } from '@src/common/permissions.decorator';
-import { RolesGuard } from '@src/common/roles.guard';
+import { Permissions } from '../common/permissions.decorator';
+import { RolesGuard } from '../common/roles.guard';
 
 @Controller('invoices')
 @UseGuards(AuthGuard('jwt'), RolesGuard)

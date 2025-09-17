@@ -2,8 +2,8 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards, Request, 
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto/users.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { Permissions } from '@src/common/permissions.decorator';
-import { RolesGuard } from '@src/common/roles.guard';
+import { Permissions } from '../common/permissions.decorator';
+import { RolesGuard } from '../common/roles.guard';
 
 @Controller('users')
 @UseGuards(AuthGuard('jwt'), RolesGuard)

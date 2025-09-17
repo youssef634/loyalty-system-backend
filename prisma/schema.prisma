@@ -52,6 +52,18 @@ model ResetPasswordToken {
   @@map("resetPasswordToken")
 }
 
+model Category {
+  id        Int               @id @default(autoincrement())
+  enName    String
+  arName    String
+  type      CategoryType
+  createdAt DateTime          @default(now())
+
+  cafeProducts       CafeProduct[]
+  restaurantProducts RestaurantProduct[]
+}
+
+
 model CafeProduct {
   id         Int     @id @default(autoincrement())
   enName     String
@@ -60,7 +72,8 @@ model CafeProduct {
   price      Float
   points     Int
   type       String  @default("cafe")
-  category   String? 
+  categoryId Int?  
+  category   Category? @relation(fields: [categoryId], references: [id])
   myRewards  MyReward[]
   transactions        Transaction[]
   invoice      InvoiceItem[]
@@ -74,7 +87,8 @@ model RestaurantProduct {
   price      Float
   points     Int
   type       String  @default("restaurant")
-  category   String? 
+  categoryId Int?  
+  category   Category? @relation(fields: [categoryId], references: [id])
   myRewards  MyReward[]
   transactions        Transaction[]
   invoice      InvoiceItem[]
@@ -187,4 +201,9 @@ enum PrinterType {
 enum TransactionStatus {
   COMPLETED
   CANCELLED
+}
+
+enum CategoryType {
+  CAFE
+  RESTAURANT
 }

@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service/prisma.service';
 import { CreateRestaurantProductDto, UpdateRestaurantProductDto } from './dto/restaurant.dto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -34,9 +34,14 @@ export class RestaurantProductsService {
       where.enName = { contains: filters.enName, mode: 'insensitive' };
     if (filters?.arName)
       where.arName = { contains: filters.arName, mode: 'insensitive' };
-    if (filters?.category)
-      where.category = { contains: filters.category, mode: 'insensitive' };
-
+    if (filters?.category) {
+      where.category = {
+        OR: [
+          { enName: { contains: filters.category, mode: 'insensitive' } },
+          { arName: { contains: filters.category, mode: 'insensitive' } },
+        ],
+      };
+    }
     if (filters?.minPoints !== undefined || filters?.maxPoints !== undefined) {
       where.points = {};
       if (filters.minPoints !== undefined)
@@ -57,6 +62,7 @@ export class RestaurantProductsService {
       where,
       skip,
       take: limit,
+      include: { category: true }
     });
 
     return {

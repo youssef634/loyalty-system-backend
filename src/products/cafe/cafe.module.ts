@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CafeProductsService } from './cafe.service';
 import { CafeProductsController } from './cafe.controller';
-import { RolesModule } from '@src/roles/roles.module';
+import { RolesModule } from '../../roles/roles.module';
 
 @Module({
   imports: [RolesModule],

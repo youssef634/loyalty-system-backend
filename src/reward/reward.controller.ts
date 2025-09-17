@@ -1,8 +1,8 @@
 import { Controller, Get, Param, Patch, Body, Request, UseGuards, ParseIntPipe, Query, Delete, Req } from '@nestjs/common';
 import { RewardService } from './reward.service';
 import { AuthGuard } from '@nestjs/passport';
-import { Permissions } from '@src/common/permissions.decorator';
-import { RolesGuard } from '@src/common/roles.guard';
+import { Permissions } from '../common/permissions.decorator';
+import { RolesGuard } from '../common/roles.guard';
 
 @Controller('rewards')
 @UseGuards(AuthGuard('jwt'), RolesGuard)

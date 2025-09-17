@@ -2,8 +2,8 @@ import { Controller, Get, Post, Delete, Query, Param, Request, ParseIntPipe, Use
 import { TransactionService } from './transaction.service';
 import { AuthGuard } from '@nestjs/passport';
 import { TransactionStatus } from '@prisma/client';
-import { Permissions } from '@src/common/permissions.decorator';
-import { RolesGuard } from '@src/common/roles.guard';
+import { Permissions } from '../common/permissions.decorator';
+import { RolesGuard } from '../common/roles.guard';
 
 @Controller('transactions')
 @UseGuards(AuthGuard('jwt'), RolesGuard)

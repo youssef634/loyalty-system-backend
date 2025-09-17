@@ -2,8 +2,8 @@ import { Controller, Post, Body, UseGuards, Get, Param, ParseIntPipe } from '@ne
 import { PosService } from './pos.service';
 import { AuthGuard } from '@nestjs/passport';
 import { PrintService } from './print.service';
-import { Permissions } from '@src/common/permissions.decorator';
-import { RolesGuard } from '@src/common/roles.guard';
+import { Permissions } from '../common/permissions.decorator';
+import { RolesGuard } from '../common/roles.guard';
 
 @Controller('pos')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
