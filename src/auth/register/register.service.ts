@@ -88,13 +88,27 @@ export class RegisterService {
 
   // Login
   async login(data: LoginDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: data.email } });
+    const user = await this.prisma.user.findUnique({
+      where: { email: data.email },
+    });
     if (!user) throw new UnauthorizedException('Invalid email or password');
 
     const isPasswordValid = await bcrypt.compare(data.password, user.password);
     if (!isPasswordValid) throw new UnauthorizedException('Invalid email or password');
 
     const token = await this.jwt.signAsync({ id: user.id });
+
+    let permissions: string[] = [];
+
+    if (user.role === 'USER') {
+      permissions = ['transactions', 'products', 'rewards'];
+    } else if (user.role !== 'ADMIN') {
+      const rolePermissions = await this.prisma.rolePermission.findMany({
+        where: { role: user.role },
+        select: { page: true },
+      });
+      permissions = rolePermissions.map(p => p.page);
+    }
 
     return {
       message: 'Login successful',
@@ -108,6 +122,7 @@ export class RegisterService {
         profileImage: user.profileImage,
         qrCode: user.qrCode,
         role: user.role,
+        ...(permissions.length > 0 && { permissions }), // ✅ only include if not empty
       },
     };
   }
@@ -251,7 +266,7 @@ export class RegisterService {
       user: userWithoutPassword,
     };
   }
-    
+
   // Update Password
   async updatePassword(userId: number, dto: UpdatePasswordDto) {
     const { oldPassword, newPassword, confirmPassword } = dto;
