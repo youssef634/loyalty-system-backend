@@ -113,7 +113,7 @@ export class DashboardService {
             });
 
             return {
-                role: 'ADMIN',
+                role: user.role,
                 customersCount,
                 totalPoints: totalPoints._sum.points || 0,
                 avgPoints: avgPoints._avg.points || 0,
