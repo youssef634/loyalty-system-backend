@@ -21,6 +21,7 @@ import { InvoiceModule } from './invoice/invoice.module';
 import { RolesModule } from './roles/roles.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ManagersModule } from './users/managers.module';
+import { ReportModule } from './reports/report.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { ManagersModule } from './users/managers.module';
     RolesModule,
     CategoriesModule,
     ManagersModule,
+    ReportModule,
     
   ],
   controllers: [AppController],
