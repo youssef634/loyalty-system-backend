@@ -132,9 +132,23 @@ export class RegisterService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new BadRequestException('User not found');
 
+    // Get permissions based on role (same logic as login)
+    let permissions: string[] = [];
+
+    if (user.role === 'USER') {
+      permissions = ['transactions', 'products', 'rewards'];
+    } else if (user.role !== 'ADMIN') {
+      const rolePermissions = await this.prisma.rolePermission.findMany({
+        where: { role: user.role },
+        select: { page: true },
+      });
+      permissions = rolePermissions.map(p => p.page);
+    }
+
     const { password, ...userData } = user;
     return {
       ...userData,
+      ...(permissions.length > 0 && { permissions }), // ✅ include permissions if not empty
     };
   }
 
