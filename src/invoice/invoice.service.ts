@@ -51,7 +51,7 @@ export class InvoiceService {
         }
 
         // 🔹 Get system timezone from settings
-        const settings = await this.prisma.settings.findFirst();
+        const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });;
         const timezone = settings?.timezone || 'UTC';
 
         const totalInvoices = await this.prisma.invoice.count({ where });
@@ -70,6 +70,7 @@ export class InvoiceService {
                     email: true,
                     totalPrice: true,
                     points: true,
+                    currency: true,
                     createdAt: true,
                     user: {
                         select: {
@@ -129,7 +130,7 @@ export class InvoiceService {
         }
 
         // 🔹 Get timezone
-        const settings = await this.prisma.settings.findFirst();
+        const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });;
         const timezone = settings?.timezone || 'UTC';
 
         return {

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "public"."Settings" ADD COLUMN     "usdToIqd" DOUBLE PRECISION NOT NULL DEFAULT 1300;

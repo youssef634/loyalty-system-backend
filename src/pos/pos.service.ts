@@ -61,6 +61,7 @@ export class PosService {
         totalPrice: data.totalPrice, // after discount
         discount: data.discount ?? 0, // save discount
         points,
+        currency: settings.enCurrency,
         items: {
           create: data.items.map((item) => ({
             quantity: item.quantity,

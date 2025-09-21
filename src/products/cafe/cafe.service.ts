@@ -65,7 +65,7 @@ export class CafeProductsService {
       where,
       skip,
       take: limit,
-       include: { category: true }
+      include: { category: true }
     });
 
     return {
@@ -78,20 +78,29 @@ export class CafeProductsService {
 
   async addProduct(
     currentUserId: number,
-    data: CreateCafeProductDto,
+    data: CreateCafeProductDto & { currency?: string },
     file?: Express.Multer.File,
   ) {
     const uploadDir = this.getCafeProductsUploadPath();
     let imageUrl: string | undefined;
 
+    // ✅ Fetch settings for conversion
+    const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+    const usdToIqd = settings?.usdToIqd || 1300;
+
+    // ✅ Currency conversion
+    let finalPrice = data.price;
+    if (data.currency === 'IQD') {
+      finalPrice = data.price / usdToIqd; // Convert IQD → USD
+    }
+
+    // Handle file upload, base64, external URL, local URL (same as before)
     if (file) {
       const fileName = `${Date.now()}_${file.originalname}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, file.buffer);
       imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
-    }
-    // Handle base64 image string
-    else if (data.image && /^data:image\/[a-z]+;base64,/.test(data.image)) {
+    } else if (data.image && /^data:image\/[a-z]+;base64,/.test(data.image)) {
       const matches = data.image.match(/^data:image\/([a-z]+);base64,(.+)$/);
       const ext = matches ? matches[1] : 'jpg';
       const base64Data = matches ? matches[2] : '';
@@ -99,9 +108,7 @@ export class CafeProductsService {
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
       imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
-    }
-    // Handle external image URL
-    else if (
+    } else if (
       data.image &&
       /^https?:\/\//i.test(data.image) &&
       !data.image.startsWith('http://localhost:3000/uploads/cafe-products/')
@@ -112,9 +119,7 @@ export class CafeProductsService {
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, response.data);
       imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
-    }
-    // Handle local image URL
-    else if (
+    } else if (
       data.image &&
       data.image.startsWith('http://localhost:3000/uploads/cafe-products/')
     ) {
@@ -124,6 +129,7 @@ export class CafeProductsService {
     return this.prisma.cafeProduct.create({
       data: {
         ...data,
+        price: finalPrice, // ✅ Save as USD
         image: imageUrl,
       },
     });
@@ -132,7 +138,7 @@ export class CafeProductsService {
   async updateProduct(
     currentUserId: number,
     id: number,
-    data: UpdateCafeProductDto,
+    data: UpdateCafeProductDto & { currency?: string },
     file?: Express.Multer.File,
   ) {
     const product = await this.prisma.cafeProduct.findUnique({ where: { id } });
@@ -141,7 +147,17 @@ export class CafeProductsService {
     let imageUrl = product.image;
     const uploadDir = this.getCafeProductsUploadPath();
 
-    // Handle file upload
+    // ✅ Fetch settings for conversion
+    const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+    const usdToIqd = settings?.usdToIqd || 1300;
+
+    // ✅ Currency conversion
+    let finalPrice = data.price ?? product.price;
+    if (data.price && data.currency === 'IQD') {
+      finalPrice = data.price / usdToIqd; // Convert IQD → USD
+    }
+
+    // Handle file upload, base64, external URL, local URL (same as before)
     if (file) {
       if (imageUrl) {
         const oldPath = path.join(uploadDir, path.basename(imageUrl));
@@ -153,16 +169,13 @@ export class CafeProductsService {
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, file.buffer);
       imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
-    }
-    // Handle base64 image string
-    else if (data.image && /^data:image\/[a-z]+;base64,/.test(data.image)) {
+    } else if (data.image && /^data:image\/[a-z]+;base64,/.test(data.image)) {
       if (imageUrl) {
         const oldPath = path.join(uploadDir, path.basename(imageUrl));
         if (fs.existsSync(oldPath)) {
           fs.unlinkSync(oldPath);
         }
       }
-      // Extract base64 data and extension
       const matches = data.image.match(/^data:image\/([a-z]+);base64,(.+)$/);
       const ext = matches ? matches[1] : 'jpg';
       const base64Data = matches ? matches[2] : '';
@@ -170,14 +183,11 @@ export class CafeProductsService {
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
       imageUrl = `http://localhost:3000/uploads/cafe-products/${fileName}`;
-    }
-    // Handle image URL
-    else if (
+    } else if (
       data.image &&
       /^https?:\/\//i.test(data.image) &&
       !data.image.startsWith('http://localhost:3000/uploads/cafe-products/')
     ) {
-      // Only fetch and save if it's an external image URL
       if (imageUrl) {
         const oldPath = path.join(uploadDir, path.basename(imageUrl));
         if (fs.existsSync(oldPath)) {
@@ -194,7 +204,6 @@ export class CafeProductsService {
       data.image &&
       data.image.startsWith('http://localhost:3000/uploads/cafe-products/')
     ) {
-      // If it's already a local image URL, just use it
       imageUrl = data.image;
     }
 
@@ -202,6 +211,7 @@ export class CafeProductsService {
       where: { id },
       data: {
         ...data,
+        price: finalPrice, // ✅ Always stored as USD
         image: imageUrl,
       },
     });

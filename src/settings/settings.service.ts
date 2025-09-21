@@ -37,7 +37,7 @@ export class SettingsService {
 
         if (user.role !== 'USER') {
             // Admin updates global settings
-            const { timezone, enCurrency, arCurrency, pointsPerDollar, pointsPerIQD, printerType, printerIp } = body;
+            const { timezone, enCurrency, arCurrency, usdToIqd , pointsPerDollar, pointsPerIQD, printerType, printerIp } = body;
 
             // Find existing global settings (any admin's settings)
             const existingGlobalSettings = await this.prisma.settings.findFirst({
@@ -52,6 +52,7 @@ export class SettingsService {
                         timezone: timezone || undefined,
                         enCurrency: enCurrency || undefined,
                         arCurrency: arCurrency || undefined,
+                        usdToIqd: usdToIqd || undefined,
                         pointsPerDollar: pointsPerDollar || undefined,
                         pointsPerIQD: pointsPerIQD || undefined,
                         printerType: printerType || undefined,
@@ -65,6 +66,7 @@ export class SettingsService {
                         timezone,
                         enCurrency,
                         arCurrency,
+                        usdToIqd,
                         pointsPerDollar,
                         pointsPerIQD,
                         printerType: printerType || 'USB',
@@ -91,6 +93,7 @@ export class SettingsService {
                         timezone,
                         enCurrency: adminSettings.enCurrency,
                         arCurrency: adminSettings.arCurrency,
+                        usdToIqd: adminSettings.usdToIqd,
                         pointsPerDollar: adminSettings.pointsPerDollar,
                         pointsPerIQD: adminSettings.pointsPerIQD,
                         printerType: adminSettings.printerType,
