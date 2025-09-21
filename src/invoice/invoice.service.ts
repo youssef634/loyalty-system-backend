@@ -109,6 +109,7 @@ export class InvoiceService {
             include: {
                 items: {
                     include: {
+                        category: true,
                         cafeProduct: true,
                         restaurantProduct: true,
                     },

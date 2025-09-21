@@ -21,7 +21,7 @@ export class PosController {
       email?: string;
       totalPrice: number; 
       discount?: number;
-      items: { productId: number; type: 'cafe' | 'restaurant'; quantity: number; price: number; total: number }[];
+      items: { productId: number; categoryId: number ; type: 'cafe' | 'restaurant'; quantity: number; price: number; total: number }[];
     },
   ) {
     return this.posService.createInvoice(body);

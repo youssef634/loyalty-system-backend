@@ -27,6 +27,7 @@ export class PrintService {
         user: true,
         items: {
           include: {
+            category: true,
             cafeProduct: true,
             restaurantProduct: true,
           },

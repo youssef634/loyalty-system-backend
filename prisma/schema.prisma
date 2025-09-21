@@ -23,7 +23,7 @@ model User {
   password            String
   profileImage        String?
   role                Role                 @default(USER)
-  points              Int                  @default(0)
+  points              Float                  @default(0)
   qrCode              String?
   createdAt           DateTime @default(now())
   transactions        Transaction[]
@@ -59,6 +59,7 @@ model Category {
   type      CategoryType
   createdAt DateTime          @default(now())
 
+  InvoiceItem        InvoiceItem[]
   cafeProducts       CafeProduct[]
   restaurantProducts RestaurantProduct[]
 }
@@ -121,7 +122,7 @@ model Transaction {
   id        Int     @id @default(autoincrement())
   type      String  // "earn" or "redeem"
   currency  Json 
-  points    Int
+  points    Float
   date      DateTime @default(now())
   userId    Int
   cafeProductId Int?   
@@ -142,8 +143,8 @@ model Settings {
   enCurrency          String
   arCurrency          String
   usdToIqd            Float   @default(1300)
-  pointsPerDollar     Int     @default(10)
-  pointsPerIQD        Int     @default(1)
+  pointsPerDollar     Float     @default(10)
+  pointsPerIQD        Float     @default(1)
   printerType         PrinterType @default(USB)
   printerIp           String? 
   port                Int?  @default(9100)
@@ -159,7 +160,7 @@ model Invoice {
   email      String?
   totalPrice Float
   discount   Float?        @default(0)
-  points     Int           @default(0)
+  points     Float           @default(0)
   currency   String        @default("USD")
   createdAt  DateTime      @default(now())
 
@@ -173,10 +174,12 @@ model InvoiceItem {
   invoiceId           Int
   cafeProductId       Int?
   restaurantProductId Int?
+  categoryId          Int?
   quantity            Int     @default(1)
   price               Float   // store product price at purchase time (important!)
   total               Float   // price * quantity
 
+  category            Category? @relation(fields: [categoryId], references: [id])
   invoice             Invoice @relation(fields: [invoiceId], references: [id])
   cafeProduct         CafeProduct?      @relation(fields: [cafeProductId], references: [id])
   restaurantProduct   RestaurantProduct? @relation(fields: [restaurantProductId], references: [id])

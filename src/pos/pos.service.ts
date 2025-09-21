@@ -15,7 +15,7 @@ export class PosService {
     email?: string;
     totalPrice: number;
     discount?: number;  
-    items: { productId: number; type: 'cafe' | 'restaurant'; quantity: number; price: number; total: number }[];
+    items: { productId: number; categoryId: number  ,type: 'cafe' | 'restaurant'; quantity: number; price: number; total: number }[];
   }) {
     if (!data.totalPrice || data.totalPrice <= 0) {
       throw new BadRequestException('Invalid total price');
@@ -67,6 +67,7 @@ export class PosService {
             quantity: item.quantity,
             price: item.price,
             total: item.total,
+            categoryId: item.categoryId,
             cafeProductId: item.type === 'cafe' ? item.productId : null,
             restaurantProductId: item.type === 'restaurant' ? item.productId : null,
           })),
@@ -75,6 +76,7 @@ export class PosService {
       include: {
         items: {
           include: {
+            category: true,
             cafeProduct: true,
             restaurantProduct: true,
           },

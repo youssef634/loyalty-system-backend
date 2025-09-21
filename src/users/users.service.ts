@@ -225,17 +225,12 @@ export class UsersService {
     async addPoints(
         currentUserId: number,
         userId: number,
-        price: number,
+        points: number,
     ) {
 
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user || user.role !== 'USER') {
             throw new ForbiddenException('Only USER role accounts are allowed here');
-        }
-
-        const amount = Number(price);
-        if (isNaN(amount) || amount <= 0) {
-            throw new BadRequestException('Price must be a positive number');
         }
 
         // Fetch settings to get conversion rates
@@ -244,24 +239,10 @@ export class UsersService {
             throw new NotFoundException('Settings not found. Please configure settings first.');
         }
 
-        // Determine points per currency
-        let pointsPerUnit = 0;
-        const currency = settings.enCurrency;
-        if (currency === 'USD') {
-            pointsPerUnit = settings.pointsPerDollar;
-        } else if (currency === 'IQD') {
-            pointsPerUnit = settings.pointsPerIQD;
-        } else {
-            throw new BadRequestException('Invalid currency. Use USD or IQD.');
-        }
-
-        // Calculate points to add
-        const pointsToAdd = amount * pointsPerUnit;
-
         // Update user points
         const updatedUser = await this.prisma.user.update({
             where: { id: userId },
-            data: { points: user.points + pointsToAdd },
+            data: { points: user.points + points },
             select: {
                 id: true,
                 enName: true,
@@ -284,13 +265,13 @@ export class UsersService {
                     arCurrency: settings.arCurrency
                 },
                 type: 'earn',
-                points: pointsToAdd,
+                points: points,
                 userId: userId,
             },
         });
 
         return {
-            message: `Added ${pointsToAdd} points to user successfully`,
+            message: `Added ${points} points to user successfully`,
             user: updatedUser,
         };
     }

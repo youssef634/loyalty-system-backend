@@ -220,6 +220,7 @@ export class ReportService {
                         quantity: true,
                         price: true,
                         total: true,
+                        category: { select: { enName: true, arName: true } },
                         cafeProduct: { select: { enName: true, arName: true } },
                         restaurantProduct: { select: { enName: true, arName: true } },
                     },
