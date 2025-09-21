@@ -60,7 +60,7 @@ export class PosService {
         email: user?.email || null,
         totalPrice: data.totalPrice, // after discount
         discount: data.discount ?? 0, // save discount
-        points,
+        points: points,
         currency: settings.enCurrency,
         items: {
           create: data.items.map((item) => ({
@@ -91,7 +91,7 @@ export class PosService {
       transaction = await this.prisma.transaction.create({
         data: {
           type: 'earn',
-          points,
+          points: points,
           userId: user.id,
           invoiceId: invoice.id,
           currency: {
@@ -110,6 +110,6 @@ export class PosService {
     // ✅ Print receipt
     const receiptFile = await this.printService.printInvoice(invoice.id);
 
-    return { invoice, transaction, updatedUser, receiptFile };
+    return { invoice, transaction, receiptFile };
   }
 }
