@@ -85,14 +85,13 @@ export class RestaurantProductsService {
 
     let imageUrl: string | undefined;
 
+    // ✅ Handle file upload / base64 / external / local
     if (file) {
       const fileName = `${Date.now()}_${file.originalname}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, file.buffer);
       imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
-    }
-    // Handle base64 image string
-    else if (data.image && /^data:image\/[a-z]+;base64,/.test(data.image)) {
+    } else if (data.image && /^data:image\/[a-z]+;base64,/.test(data.image)) {
       const matches = data.image.match(/^data:image\/([a-z]+);base64,(.+)$/);
       const ext = matches ? matches[1] : 'jpg';
       const base64Data = matches ? matches[2] : '';
@@ -100,9 +99,7 @@ export class RestaurantProductsService {
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
       imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
-    }
-    // Handle external image URL
-    else if (
+    } else if (
       data.image &&
       /^https?:\/\//i.test(data.image) &&
       !data.image.startsWith('http://localhost:3000/uploads/restaurant-products/')
@@ -113,18 +110,26 @@ export class RestaurantProductsService {
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, response.data);
       imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
-    }
-    // Handle local image URL
-    else if (
+    } else if (
       data.image &&
       data.image.startsWith('http://localhost:3000/uploads/restaurant-products/')
     ) {
       imageUrl = data.image;
     }
 
+    // ✅ Handle currency conversion
+    const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+
+    let finalPrice = data.price;
+    if (settings?.enCurrency === 'IQD') {
+      // Convert IQD → USD before storing
+      finalPrice = data.price / settings.usdToIqd;
+    }
+
     return this.prisma.restaurantProduct.create({
       data: {
         ...data,
+        price: finalPrice, // always stored in USD
         image: imageUrl,
       },
     });
@@ -145,26 +150,20 @@ export class RestaurantProductsService {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
+    // ✅ Replace image if new one provided
     if (file) {
-      // Delete old file if exists
       if (imageUrl && imageUrl.startsWith('http://localhost:3000/uploads/restaurant-products/')) {
         const oldPath = path.join(uploadDir, path.basename(imageUrl));
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
       const fileName = `${Date.now()}_${file.originalname}`;
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, file.buffer);
       imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
-    }
-    // Handle base64 image string
-    else if (data.image && /^data:image\/[a-z]+;base64,/.test(data.image)) {
+    } else if (data.image && /^data:image\/[a-z]+;base64,/.test(data.image)) {
       if (imageUrl && imageUrl.startsWith('http://localhost:3000/uploads/restaurant-products/')) {
         const oldPath = path.join(uploadDir, path.basename(imageUrl));
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
       const matches = data.image.match(/^data:image\/([a-z]+);base64,(.+)$/);
       const ext = matches ? matches[1] : 'jpg';
@@ -173,18 +172,14 @@ export class RestaurantProductsService {
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
       imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
-    }
-    // Handle external image URL
-    else if (
+    } else if (
       data.image &&
       /^https?:\/\//i.test(data.image) &&
       !data.image.startsWith('http://localhost:3000/uploads/restaurant-products/')
     ) {
       if (imageUrl && imageUrl.startsWith('http://localhost:3000/uploads/restaurant-products/')) {
         const oldPath = path.join(uploadDir, path.basename(imageUrl));
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
       const response = await axios.get(data.image, { responseType: 'arraybuffer' });
       const ext = response.headers['content-type']?.split('/')[1] || 'jpg';
@@ -192,19 +187,26 @@ export class RestaurantProductsService {
       const filePath = path.join(uploadDir, fileName);
       fs.writeFileSync(filePath, response.data);
       imageUrl = `http://localhost:3000/uploads/restaurant-products/${fileName}`;
-    }
-    // Handle local image URL
-    else if (
+    } else if (
       data.image &&
       data.image.startsWith('http://localhost:3000/uploads/restaurant-products/')
     ) {
       imageUrl = data.image;
     }
 
+    // ✅ Handle currency conversion
+    const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+
+    let finalPrice = data.price ?? product.price;
+    if (data.price !== undefined && settings?.enCurrency === 'IQD') {
+      finalPrice = data.price / settings.usdToIqd; // Convert IQD → USD
+    }
+
     return this.prisma.restaurantProduct.update({
       where: { id },
       data: {
         ...data,
+        price: finalPrice,
         image: imageUrl,
       },
     });

@@ -70,6 +70,7 @@ export class InvoiceService {
                     email: true,
                     totalPrice: true,
                     points: true,
+                    currency: true,
                     createdAt: true,
                     user: {
                         select: {

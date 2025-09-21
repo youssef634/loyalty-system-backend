@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service/prisma.service';
-import { Role, RewardStatus, CategoryType, TransactionStatus } from '@prisma/client';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class ReportService {
@@ -212,6 +212,7 @@ export class ReportService {
                 totalPrice: true,
                 discount: true,
                 points: true,
+                currency: true,
                 createdAt: true,
                 items: {
                     select: {

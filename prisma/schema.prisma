@@ -141,6 +141,7 @@ model Settings {
   timezone            String  @default("UTC")
   enCurrency          String
   arCurrency          String
+  usdToIqd            Float   @default(1300)
   pointsPerDollar     Int     @default(10)
   pointsPerIQD        Int     @default(1)
   printerType         PrinterType @default(USB)
@@ -159,6 +160,7 @@ model Invoice {
   totalPrice Float
   discount   Float?        @default(0)
   points     Int           @default(0)
+  currency   String        @default("USD")
   createdAt  DateTime      @default(now())
 
   user       User?         @relation(fields: [userId], references: [id])
