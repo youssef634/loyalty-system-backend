@@ -239,7 +239,7 @@ export class UsersService {
         }
 
         // Fetch settings to get conversion rates
-        const settings = await this.prisma.settings.findFirst();
+        const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });;
         if (!settings) {
             throw new NotFoundException('Settings not found. Please configure settings first.');
         }
