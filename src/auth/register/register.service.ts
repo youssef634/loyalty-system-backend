@@ -34,12 +34,12 @@ export class RegisterService {
     return uploadDir;
   }
 
-  private async generateUserQrPng(userId: number, email: string): Promise<string> {
+  private async generateUserQrPng(userId: number, email: string, phone: string): Promise<string> {
     const uploadDir = this.getQrUploadPath();
     const fileName = `${email}.png`;
     const filePath = path.join(uploadDir, fileName);
 
-    const qrPayload = JSON.stringify({ id: userId, email });
+    const qrPayload = JSON.stringify({ id: userId, email, phone });
     await QRCode.toFile(filePath, qrPayload);
 
     return `http://localhost:3000/uploads/qrcodes/${fileName}`;
@@ -67,7 +67,7 @@ export class RegisterService {
     });
 
     // Generate QR code and update the user
-    const qrCode = await this.generateUserQrPng(newUser.id, newUser.email);
+    const qrCode = await this.generateUserQrPng(newUser.id, newUser.email, newUser.phone);
     const updatedUser = await this.prisma.user.update({
       where: { id: newUser.id },
       data: { qrCode: qrCode }
@@ -88,13 +88,18 @@ export class RegisterService {
 
   // Login
   async login(data: LoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: data.email },
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: data.emailOrPhone },
+          { phone: data.emailOrPhone }
+        ]
+      },
     });
-    if (!user) throw new UnauthorizedException('Invalid email or password');
+    if (!user) throw new UnauthorizedException('Invalid email/phone or password');
 
     const isPasswordValid = await bcrypt.compare(data.password, user.password);
-    if (!isPasswordValid) throw new UnauthorizedException('Invalid email or password');
+    if (!isPasswordValid) throw new UnauthorizedException('Invalid email/phone or password');
 
     const token = await this.jwt.signAsync({ id: user.id });
 
@@ -122,7 +127,7 @@ export class RegisterService {
         profileImage: user.profileImage,
         qrCode: user.qrCode,
         role: user.role,
-        ...(permissions.length > 0 && { permissions }), // ✅ only include if not empty
+        ...(permissions.length > 0 && { permissions }),
       },
     };
   }
@@ -148,7 +153,7 @@ export class RegisterService {
     const { password, ...userData } = user;
     return {
       ...userData,
-      ...(permissions.length > 0 && { permissions }), // ✅ include permissions if not empty
+      ...(permissions.length > 0 && { permissions }),
     };
   }
 

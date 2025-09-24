@@ -35,9 +35,9 @@ export class PosService {
     // 👇 Points based on pre-discount total
     let points = 0;
     if (settings.enCurrency === 'USD') {
-      points = Math.floor(preDiscountTotal * settings.pointsPerDollar);
+      points = (preDiscountTotal * settings.pointsPerDollar);
     } else if (settings.enCurrency === 'IQD') {
-      points = Math.floor(preDiscountTotal * settings.pointsPerIQD);
+      points = (preDiscountTotal * settings.pointsPerIQD);
     }
 
     let user = null;

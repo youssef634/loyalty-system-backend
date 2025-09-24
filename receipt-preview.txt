@@ -1,14 +1,14 @@
 *** LOYALTY RECEIPT ***
-Invoice #17
-Date: Sep 21, 2025, 08:08 PM
-Customer: Youssef khaled
+Invoice #20
+Date: Sep 23, 2025, 02:29 PM
+Customer: ahmed
 --------------------------------------
 Item               Price   Qty   Total
 --------------------------------------
-coffee              10.00   x2    20.00
+coffee               2.00   x1     2.00
 --------------------------------------
-SUBTOTAL: 20.00
-DISCOUNT: 25%
-TOTAL:    15.00
-POINTS EARNED: 2
+SUBTOTAL: 2.00
+DISCOUNT: 0%
+TOTAL:    2.00
+POINTS EARNED: 0.2
 Thank you for your purchase!
