@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsOptional, isString, IsString, Matches, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, isString, IsString, Matches, MinLength, ValidateIf } from 'class-validator';
 
 export class RegisterDto {
   @IsNotEmpty()
@@ -28,15 +28,21 @@ export class RegisterDto {
 }
 
 export class LoginDto {
-  @IsNotEmpty()
-  @IsString()
-  emailOrPhone: string;
+  @IsOptional()
+  @IsEmail({}, { message: 'Invalid email format' })
+  email?: string;
 
-  @IsNotEmpty()
-  @IsString()
+  @IsOptional()
+  @Matches(/^[+]?[\d\s-()]+$/, { message: 'Invalid phone format' })
+  phone?: string;
+
+  @IsNotEmpty({ message: 'Password is required' })
   password: string;
-}
 
+  @ValidateIf(o => !o.email && !o.phone)
+  @IsNotEmpty({ message: 'Either email or phone must be provided' })
+  emailOrPhone?: never;
+}
 export class UpdateNameDto {
   @IsOptional()
   @IsString()
