@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { InvoiceService } from './invoice.service';
 import { Permissions } from '../common/permissions.decorator';
@@ -24,5 +24,12 @@ export class InvoiceController {
   @Permissions('invoices')
   async getInvoiceById(@Param('id', ParseIntPipe) id: number) {
     return this.invoiceService.getInvoiceById(id);
+  }
+
+  /** 🔹 DELETE /invoices/:id → delete invoice by id */
+  @Delete(':id')
+  @Permissions('invoices')
+  async deleteInvoice(@Param('id', ParseIntPipe) id: number) {
+    return this.invoiceService.deleteInvoice(id);
   }
 }

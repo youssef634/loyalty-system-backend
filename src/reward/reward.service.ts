@@ -72,7 +72,7 @@ export class RewardService {
             where: filters,
             skip,
             take: limit,
-            orderBy: { date: 'desc' },
+            orderBy: { id: 'asc' },
             include: {
                 user: { select: { enName: true, arName: true }},
                 cafeProduct: { select: { enName: true, arName: true, image: true } },

@@ -28,7 +28,7 @@ export class CategoriesService {
   async findAll(type?: CategoryType) {
     return this.prisma.category.findMany({
       where: type ? { type } : undefined,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { id: 'asc' },
     });
   }
 
@@ -52,14 +52,14 @@ export class CategoriesService {
   async getCafeCategories() {
     return this.prisma.category.findMany({
       where: { type: CategoryType.CAFE },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { id: 'asc' },
     });
   }
 
   async getRestaurantCategories() {
     return this.prisma.category.findMany({
       where: { type: CategoryType.RESTAURANT },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { id: 'asc' },
     });
   }
 }

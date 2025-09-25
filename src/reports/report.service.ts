@@ -70,7 +70,7 @@ export class ReportService {
                         status: true,
                         date: true,
                     },
-                    orderBy: { date: 'desc' },
+                    orderBy: { id: 'asc' },
                 },
                 myRewards: {
                     select: {
@@ -83,7 +83,7 @@ export class ReportService {
                         cafeProduct: { select: { enName: true, arName: true, price: true } },
                         restaurantProduct: { select: { enName: true, arName: true, price: true } },
                     },
-                    orderBy: { date: 'desc' },
+                    orderBy: { id: 'asc' },
                 },
             },
         });
@@ -112,7 +112,7 @@ export class ReportService {
                 date: true,
                 user: { select: { id: true, enName: true, arName: true } },
             },
-            orderBy: { date: 'desc' },
+            orderBy: { id: 'asc' },
         });
     }
 
@@ -175,7 +175,7 @@ export class ReportService {
                 cafeProduct: { select: { enName: true, arName: true, price: true } },
                 restaurantProduct: { select: { enName: true, arName: true, price: true } },
             },
-            orderBy: { date: 'desc' },
+            orderBy: { id: 'asc' },
         });
     }
 
@@ -227,7 +227,7 @@ export class ReportService {
                 },
                 user: { select: { id: true, enName: true, arName: true } },
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy: { id: 'asc' },
         });
     }
 }

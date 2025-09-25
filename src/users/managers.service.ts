@@ -41,7 +41,7 @@ export class ManagersService {
   async findAllManagers() {
     return this.prisma.user.findMany({
       where: { role: { in: [Role.ADMIN, Role.ACCOUNTANT, Role.CASHIER] } },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { id: 'asc' },
       select: {
         id: true,
         enName: true,
