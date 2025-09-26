@@ -105,9 +105,9 @@ export class UsersService {
 
         // Sorting logic
         let orderBy: any = { id: 'asc' }; // default
-        if (filters?.sortBy) {
+        if (searchFilters?.sortBy) {
             orderBy = {};
-            orderBy[filters.sortBy] = filters.sortOrder === 'asc' ? 'asc' : 'desc';
+            orderBy[searchFilters.sortBy] = searchFilters.sortOrder === 'asc' ? 'asc' : 'desc';
         }
 
         const totalUsers = await this.prisma.user.count({ where: filters });
