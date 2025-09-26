@@ -79,4 +79,10 @@ export class UsersController {
             Number(points)
         );
     }
+
+    @Delete()
+    @Permissions('customers')
+    deleteUsers(@Request() req, @Body('ids') ids: number[]) {
+        return this.usersService.deleteUsers(req.user.id, ids);
+    }
 }
