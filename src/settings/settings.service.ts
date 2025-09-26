@@ -11,20 +11,16 @@ export class SettingsService {
 
         if (user.role !== 'USER') {
             // Admin gets global settings (any admin's settings)
-            return this.prisma.settings.findFirst({
-                where: {
-                    user: { role: 'ADMIN' }
-                }
+            return this.prisma.settings.findUnique({
+                where: { id : 1}
             });
         } else {
             // User gets their own settings if exists
             let settings = await this.prisma.settings.findUnique({ where: { userId } });
             if (!settings) {
                 // If not exist, return global admin settings
-                settings = await this.prisma.settings.findFirst({
-                    where: {
-                        user: { role: 'ADMIN' }
-                    }
+                settings = await this.prisma.settings.findUnique({
+                    where: { id : 1}
                 });
             }
             return settings;
