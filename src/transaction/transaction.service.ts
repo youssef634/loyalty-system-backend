@@ -90,10 +90,10 @@ export class TransactionService {
         }
 
         // Sorting logic
-        let orderBy: any = { id: 'asc' }; // default
-        if (filters?.sortBy) {
+        let orderBy: any
+        if (searchFilters?.sortBy) {
             orderBy = {};
-            orderBy[filters.sortBy] = filters.sortOrder === 'asc' ? 'asc' : 'desc';
+            orderBy[searchFilters.sortBy] = searchFilters.sortOrder === 'asc' ? 'asc' : 'desc';
         }
 
         if (isUser) {
@@ -110,7 +110,7 @@ export class TransactionService {
             where: filters,
             skip,
             take: limit,
-            orderBy: { id: 'asc' },
+            orderBy,
             include: {
                 user: { select: { id: true, enName: true, arName: true, email: true } },
             },
