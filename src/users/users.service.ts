@@ -285,4 +285,17 @@ export class UsersService {
             user: updatedUser,
         };
     }
+
+    async deleteUsers(currentUserId: number, ids: number[]) {
+        const results = [];
+        for (const id of ids) {
+            try {
+                await this.deleteUser(currentUserId, id);
+                results.push({ id, status: 'deleted' });
+            } catch (error) {
+                results.push({ id, status: 'error', message: error });
+            }
+        }
+        return { message: 'Users deleted', results };
+    }
 }

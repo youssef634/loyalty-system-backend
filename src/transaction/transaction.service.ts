@@ -169,4 +169,16 @@ export class TransactionService {
 
         return cancelledTransaction;
     }
+
+    async deleteTransactions(currentUserId: number, transactionIds: number[]) {
+        const results = [];
+        for (const id of transactionIds) {
+            // Cancel first
+            await this.cancelTransaction(currentUserId, id);
+            // Then delete
+            await this.prisma.transaction.delete({ where: { id } });
+            results.push({ id, status: 'deleted' });
+        }
+        return { message: 'Transactions cancelled and deleted', results };
+    }
 }

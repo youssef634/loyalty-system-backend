@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Query, Param, Request, ParseIntPipe, UseGuards, Res, Req } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Query, Param, Request, ParseIntPipe, UseGuards, Res, Req, Body } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { AuthGuard } from '@nestjs/passport';
 import { TransactionStatus } from '@prisma/client';
@@ -54,11 +54,21 @@ export class TransactionController {
 
     @Delete(':id')
     @Permissions('transactions')
-    deleteTransaction(
+    async deleteTransaction(
         @Request() req,
         @Param('id', ParseIntPipe) id: number
     ) {
+        await this.transactionService.cancelTransaction(req.user.id, id);
         return this.transactionService.deleteTransaction(req.user.id, id);
+    }
+
+    @Delete()
+    @Permissions('transactions')
+    async deleteTransactions(
+        @Request() req,
+        @Body('ids') ids: number[]
+    ) {
+        return this.transactionService.deleteTransactions(req.user.id, ids);
     }
 
     @Post(':id/cancel')
