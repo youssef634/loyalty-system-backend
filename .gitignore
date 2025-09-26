@@ -8,6 +8,10 @@ dist/
 prisma/.env
 .env
 
+# Generated files
+receipt-preview.txt
+tsconfig.build.tsbuildinfo
+
 # Logs
 *.log
 

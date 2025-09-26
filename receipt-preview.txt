@@ -1,14 +1,13 @@
 *** LOYALTY RECEIPT ***
-Invoice #30
-Date: Sep 26, 2025, 05:30 AM
-Customer: Abdelrahman Gomaa 
+Invoice #33
+Date: Sep 26, 2025, 06:28 PM
+Customer: Youssef khaled
 --------------------------------------
 Item               Price   Qty   Total
 --------------------------------------
-coffee             2620.00   x1  2620.00
---------------------------------------
-SUBTOTAL: 2620.00
-DISCOUNT: 0%
-TOTAL:    2620.00
-POINTS EARNED: 1310
+coffee             2640.00   x1  2640.00
+SUBTOTAL: 2640.00
+DISCOUNT: 10%
+TOTAL:    2376.00
+POINTS EARNED: 1320
 Thank you for your purchase!
