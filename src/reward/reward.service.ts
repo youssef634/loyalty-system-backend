@@ -18,6 +18,8 @@ export class RewardService {
             fromDate?: string;
             toDate?: string;
             userId?: number;
+            sortBy?: string;
+            sortOrder?: 'asc' | 'desc';
         }
     ) {
         const user = await this.prisma.user.findUnique({ where: { id: currentUserId } });
@@ -56,6 +58,13 @@ export class RewardService {
 
         if (searchFilters?.userId) filters.userId = searchFilters.userId;
 
+        // Sorting logic
+        let orderBy: any = { id: 'asc' }; // default
+        if (filters?.sortBy) {
+            orderBy = {};
+            orderBy[filters.sortBy] = filters.sortOrder === 'asc' ? 'asc' : 'desc';
+        }
+
         if (isUser) {
             filters.userId = currentUserId;
         }
@@ -74,7 +83,7 @@ export class RewardService {
             take: limit,
             orderBy: { id: 'asc' },
             include: {
-                user: { select: { enName: true, arName: true }},
+                user: { select: { enName: true, arName: true } },
                 cafeProduct: { select: { enName: true, arName: true, image: true } },
                 restaurantProduct: { select: { enName: true, arName: true, image: true } },
             },

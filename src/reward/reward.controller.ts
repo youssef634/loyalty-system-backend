@@ -20,6 +20,8 @@ export class RewardController {
         @Query('fromDate') fromDate?: string,
         @Query('toDate') toDate?: string,
         @Query('userId') userId?: number,
+        @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
     ) {
         return this.rewardService.getRewards(req.user.id, Number(page), {
             limit: limit ? Number(limit) : undefined,
@@ -29,6 +31,8 @@ export class RewardController {
             fromDate,
             toDate,
             userId: userId ? Number(userId) : undefined,
+            sortBy,
+            sortOrder,
         });
     }
 

@@ -10,7 +10,6 @@ export class SettingsController {
   constructor(private settingsService: SettingsService) {}
 
   @Get()
-  @Permissions('settings')
   getSettings(@Request() req) {
     return this.settingsService.getSettings(req.user.id);
   }

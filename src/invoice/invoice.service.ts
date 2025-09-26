@@ -20,6 +20,8 @@ export class InvoiceService {
             maxPrice?: number | string;
             minPoints?: number | string;
             maxPoints?: number | string;
+            sortBy?: string;
+            sortOrder?: 'asc' | 'desc';
         },
     ) {
         // 🔹 Ensure numbers are parsed
@@ -48,6 +50,13 @@ export class InvoiceService {
             where.points = {};
             if (filters.minPoints) where.points.gte = Number(filters.minPoints);
             if (filters.maxPoints) where.points.lte = Number(filters.maxPoints);
+        }
+
+        // Sorting logic
+        let orderBy: any = { id: 'asc' }; // default
+        if (filters?.sortBy) {
+            orderBy = {};
+            orderBy[filters.sortBy] = filters.sortOrder === 'asc' ? 'asc' : 'desc';
         }
 
         // 🔹 Get system timezone from settings

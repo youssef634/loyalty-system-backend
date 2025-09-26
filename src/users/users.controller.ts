@@ -29,6 +29,8 @@ export class UsersController {
         @Query('arName') arName?: string,
         @Query('email') email?: string,
         @Query('phone') phone?: string,
+        @Query('sortBy') sortBy?: string,
+        @Query('sortOrder') sortOrder?: 'asc' | 'desc',
     ) {
         return this.usersService.getAllUsers(
             req.user.id,
@@ -40,6 +42,8 @@ export class UsersController {
                 arName: arName || undefined,
                 email: email || undefined,
                 phone: phone || undefined,
+                sortBy,
+                sortOrder,
             },
         );
     }

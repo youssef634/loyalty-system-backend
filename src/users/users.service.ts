@@ -82,6 +82,8 @@ export class UsersService {
             arName?: string;
             email?: string;
             phone?: string;
+            sortBy?: string;
+            sortOrder?: 'asc' | 'desc';
         },
     ) {
         // Get timezone from settings
@@ -100,6 +102,13 @@ export class UsersService {
         if (searchFilters?.arName) filters.arName = { contains: searchFilters.arName, mode: 'insensitive' };
         if (searchFilters?.email) filters.email = { contains: searchFilters.email, mode: 'insensitive' };
         if (searchFilters?.phone) filters.phone = { contains: searchFilters.phone, mode: 'insensitive' };
+
+        // Sorting logic
+        let orderBy: any = { id: 'asc' }; // default
+        if (filters?.sortBy) {
+            orderBy = {};
+            orderBy[filters.sortBy] = filters.sortOrder === 'asc' ? 'asc' : 'desc';
+        }
 
         const totalUsers = await this.prisma.user.count({ where: filters });
         const totalPages = Math.ceil(totalUsers / limit);

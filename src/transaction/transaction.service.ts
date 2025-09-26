@@ -33,6 +33,8 @@ export class TransactionService {
             cafeProductId?: number;
             restaurantProductId?: number;
             status?: TransactionStatus;
+            sortBy?: string;
+            sortOrder?: 'asc' | 'desc';
         }
     ) {
         const user = await this.prisma.user.findUnique({ where: { id: currentUserId } });
@@ -86,7 +88,14 @@ export class TransactionService {
         if (searchFilters?.status) {
             filters.status = searchFilters.status.toUpperCase();
         }
-        
+
+        // Sorting logic
+        let orderBy: any = { id: 'asc' }; // default
+        if (filters?.sortBy) {
+            orderBy = {};
+            orderBy[filters.sortBy] = filters.sortOrder === 'asc' ? 'asc' : 'desc';
+        }
+
         if (isUser) {
             filters.userId = currentUserId;
         }
