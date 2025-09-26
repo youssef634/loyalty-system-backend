@@ -62,7 +62,7 @@ export class InvoiceService {
                 where,
                 skip,
                 take,
-                orderBy: { createdAt: 'desc' },
+                orderBy: { id: 'asc' },
                 select: {
                     id: true,
                     userId: true,
@@ -140,5 +140,50 @@ export class InvoiceService {
                 .setZone(timezone)
                 .toFormat('MMM dd, yyyy, hh:mm a'),
         };
+    }
+
+    async deleteInvoice(id: number) {
+        // Find the invoice and include its transaction
+        const invoice = await this.prisma.invoice.findUnique({
+            where: { id },
+            include: { transaction: true }
+        });
+        if (!invoice) throw new NotFoundException(`Invoice with id ${id} not found`);
+
+        // If there is a transaction, cancel it using the same logic as cancelTransaction
+        if (invoice.transaction) {
+            const transaction = invoice.transaction;
+            const user = await this.prisma.user.findUnique({ where: { id: transaction.userId } });
+            if (user) {
+                // Revert points based on type
+                const userPointsUpdate = transaction.type === 'earn'
+                    ? { points: user.points - transaction.points }
+                    : { points: user.points + transaction.points };
+
+                await this.prisma.user.update({
+                    where: { id: transaction.userId },
+                    data: userPointsUpdate
+                });
+            }
+
+            // Mark transaction as cancelled
+            await this.prisma.transaction.update({
+                where: { id: transaction.id },
+                data: { status: 'CANCELLED' }
+            });
+
+            // Delete the transaction
+            await this.prisma.transaction.delete({
+                where: { id: transaction.id }
+            });
+        }
+
+        // Delete related invoice items
+        await this.prisma.invoiceItem.deleteMany({ where: { invoiceId: id } });
+
+        // Delete the invoice itself
+        await this.prisma.invoice.delete({ where: { id } });
+
+        return { message: `Invoice ${id} and its transaction deleted successfully` };
     }
 }

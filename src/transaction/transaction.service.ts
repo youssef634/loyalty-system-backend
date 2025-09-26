@@ -9,7 +9,7 @@ export class TransactionService {
 
     async getAllTransactions() {
         return this.prisma.transaction.findMany({
-            orderBy: { date: 'desc' },
+            orderBy: { id: 'asc' },
             include: {
                 user: { select: { id: true, enName: true, arName: true, email: true } },
 
@@ -101,7 +101,7 @@ export class TransactionService {
             where: filters,
             skip,
             take: limit,
-            orderBy: { date: 'desc' },
+            orderBy: { id: 'asc' },
             include: {
                 user: { select: { id: true, enName: true, arName: true, email: true } },
             },
