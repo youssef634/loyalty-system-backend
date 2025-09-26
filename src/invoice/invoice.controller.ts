@@ -9,7 +9,7 @@ import { RolesGuard } from '../common/roles.guard';
 export class InvoiceController {
   constructor(private readonly invoiceService: InvoiceService) {}
 
-  /** 🔹 GET /invoices/all/:page?page=1&limit=20&phone=... */
+  /** 🔹 GET /invoices/all/:page?limit=20&phone=... */
   @Get('all/:page')
   @Permissions('invoices')
   async getAllInvoices(
