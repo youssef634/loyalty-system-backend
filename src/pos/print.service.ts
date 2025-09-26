@@ -113,12 +113,13 @@ export class PrintService {
               printer.text(line);
             });
 
-            printer
-              .drawLine()
-              .text(`SUBTOTAL: ${subtotal.toFixed(2)}`)
-              .text(`DISCOUNT: ${discount}%`)
-              .text(`TOTAL:    ${total.toFixed(2)}`)
-              .text(`POINTS EARNED: ${invoice.points}`)
+            // Summary section
+            if (discount > 0) {
+              printer.text(`SUBTOTAL: ${subtotal.toFixed(2)}`);
+              printer.text(`DISCOUNT: ${discount}%`);
+            }
+            printer.text(`TOTAL:    ${total.toFixed(2)}`);
+            printer.text(`POINTS EARNED: ${invoice.points}`)
               .text('Thank you for your purchase!')
               .cut()
               .close();
@@ -173,9 +174,11 @@ export class PrintService {
       lines.push(line);
     });
 
-    lines.push('--------------------------------------');
-    lines.push(`SUBTOTAL: ${subtotal.toFixed(2)}`);
-    lines.push(`DISCOUNT: ${discount}%`);
+    // Emulator summary section
+    if (discount > 0) {
+      lines.push(`SUBTOTAL: ${subtotal.toFixed(2)}`);
+      lines.push(`DISCOUNT: ${discount}%`);
+    }
     lines.push(`TOTAL:    ${total.toFixed(2)}`);
     lines.push(`POINTS EARNED: ${invoice.points}`);
     lines.push('Thank you for your purchase!');
