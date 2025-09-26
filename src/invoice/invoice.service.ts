@@ -53,10 +53,26 @@ export class InvoiceService {
         }
 
         // Sorting logic
-        let orderBy: any = { id: 'asc' }; // default
+        let orderBy: any
         if (filters?.sortBy) {
             orderBy = {};
-            orderBy[filters.sortBy] = filters.sortOrder === 'asc' ? 'asc' : 'desc';
+
+            // Handle special sorting cases for invoices
+            if (filters.sortBy === 'user.name') {
+                orderBy = {
+                    user: {
+                        enName: filters.sortOrder === 'asc' ? 'asc' : 'desc'
+                    }
+                };
+            } else if (['id', 'totalPrice', 'points', 'createdAt', 'userId'].includes(filters.sortBy)) {
+                // Valid direct database fields
+                orderBy[filters.sortBy] = filters.sortOrder === 'asc' ? 'asc' : 'desc';
+            } else {
+                // Fallback to createdAt sorting for unsupported fields
+                orderBy = { createdAt: filters.sortOrder === 'asc' ? 'asc' : 'desc' };
+            }
+        } else {
+            orderBy = { id: 'asc' }; // Default sorting
         }
 
         // 🔹 Get system timezone from settings
@@ -71,7 +87,7 @@ export class InvoiceService {
                 where,
                 skip,
                 take,
-                orderBy: { id: 'asc' },
+                orderBy,
                 select: {
                     id: true,
                     userId: true,

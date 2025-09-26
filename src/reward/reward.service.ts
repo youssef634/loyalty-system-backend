@@ -59,10 +59,32 @@ export class RewardService {
         if (searchFilters?.userId) filters.userId = searchFilters.userId;
 
         // Sorting logic
-        let orderBy: any = { id: 'asc' }; // default
+        let orderBy: any
         if (searchFilters?.sortBy) {
             orderBy = {};
-            orderBy[searchFilters.sortBy] = searchFilters.sortOrder === 'asc' ? 'asc' : 'desc';
+
+            // Handle special sorting cases for rewards
+            if (searchFilters.sortBy === 'user.name') {
+                orderBy = {
+                    user: {
+                        enName: searchFilters.sortOrder === 'asc' ? 'asc' : 'desc'
+                    }
+                };
+            } else if (searchFilters.sortBy === 'product.name') {
+                // Sort by cafe or restaurant product name
+                orderBy = [
+                    { cafeProduct: { enName: searchFilters.sortOrder === 'asc' ? 'asc' : 'desc' } },
+                    { restaurantProduct: { enName: searchFilters.sortOrder === 'asc' ? 'asc' : 'desc' } }
+                ];
+            } else if (['id', 'type', 'status', 'points', 'date', 'userId'].includes(searchFilters.sortBy)) {
+                // Valid direct database fields
+                orderBy[searchFilters.sortBy] = searchFilters.sortOrder === 'asc' ? 'asc' : 'desc';
+            } else {
+                // Fallback to date sorting for unsupported fields
+                orderBy = { date: searchFilters.sortOrder === 'asc' ? 'asc' : 'desc' };
+            }
+        } else {
+            orderBy = { id: 'asc' }; // Default sorting
         }
 
         if (isUser) {
@@ -81,7 +103,7 @@ export class RewardService {
             where: filters,
             skip,
             take: limit,
-            orderBy: { id: 'asc' },
+            orderBy,
             include: {
                 user: { select: { enName: true, arName: true } },
                 cafeProduct: { select: { enName: true, arName: true, image: true } },

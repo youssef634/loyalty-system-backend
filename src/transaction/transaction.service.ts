@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service/prisma.service';
 import { DateTime } from 'luxon';
 import { TransactionStatus } from '@prisma/client';
@@ -42,7 +42,6 @@ export class TransactionService {
 
         const isUser = user.role === 'USER';
 
-        // Get timezone from settings (fallback UTC)
         let settings = await this.prisma.settings.findUnique({ where: { userId: currentUserId } });
         if (!settings) {
             settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
@@ -50,7 +49,6 @@ export class TransactionService {
         }
         const timezone = settings?.timezone || 'UTC';
 
-        // Use limit from query or default to 10
         const limit = searchFilters?.limit && searchFilters.limit > 0 ? searchFilters.limit : 10;
         const filters: any = {};
 
@@ -62,7 +60,6 @@ export class TransactionService {
             if (searchFilters.pointsMax !== undefined) filters.points.lte = searchFilters.pointsMax;
         }
 
-        // Date filter (date-only range)
         if (searchFilters?.fromDate || searchFilters?.toDate) {
             const filtersDate: any = {};
             if (searchFilters.fromDate) {
@@ -76,7 +73,6 @@ export class TransactionService {
 
         if (searchFilters?.userId) filters.userId = searchFilters.userId;
 
-        // Email filter - search by user email
         if (searchFilters?.email) {
             filters.user = {
                 email: { contains: searchFilters.email, mode: 'insensitive' }
@@ -89,11 +85,25 @@ export class TransactionService {
             filters.status = searchFilters.status.toUpperCase();
         }
 
-        // Sorting logic
         let orderBy: any
         if (searchFilters?.sortBy) {
             orderBy = {};
-            orderBy[searchFilters.sortBy] = searchFilters.sortOrder === 'asc' ? 'asc' : 'desc';
+
+            if (searchFilters.sortBy === 'user.name') {
+                orderBy = {
+                    user: {
+                         enName: searchFilters.sortOrder === 'asc' ? 'asc' : 'desc'
+                    }
+                };
+            } else if (searchFilters.sortBy === 'currency.arCurrency' || searchFilters.sortBy === 'currency.enCurrency') {
+                orderBy = { date: searchFilters.sortOrder === 'asc' ? 'asc' : 'desc' };
+            } else if (['id', 'type', 'points', 'date', 'status', 'userId'].includes(searchFilters.sortBy)) {
+                orderBy[searchFilters.sortBy] = searchFilters.sortOrder === 'asc' ? 'asc' : 'desc';
+            } else {
+                orderBy = { date: searchFilters.sortOrder === 'asc' ? 'asc' : 'desc' };
+            }
+        } else {
+            orderBy = { id: 'asc' };
         }
 
         if (isUser) {
@@ -116,7 +126,6 @@ export class TransactionService {
             },
         });
 
-        // Add formatted date according to timezone
         const formattedTransactions = transactions.map(tx => ({
             ...tx,
             formattedDate: DateTime
@@ -142,7 +151,6 @@ export class TransactionService {
     }
 
     async cancelTransaction(adminUserId: number, transactionId: number) {
-        // Find the transaction
         const transaction = await this.prisma.transaction.findUnique({
             where: { id: transactionId },
             include: { user: true }
@@ -151,7 +159,6 @@ export class TransactionService {
         if (!transaction) throw new NotFoundException('Transaction not found');
         if (transaction.status === 'CANCELLED') throw new ForbiddenException('Transaction is already cancelled');
 
-        // Revert points based on type
         const userPointsUpdate = transaction.type === 'earn'
             ? { points: transaction.user.points - transaction.points }
             : { points: transaction.user.points + transaction.points };
@@ -161,7 +168,6 @@ export class TransactionService {
             data: userPointsUpdate
         });
 
-        // Mark transaction as cancelled
         const cancelledTransaction = await this.prisma.transaction.update({
             where: { id: transactionId },
             data: { status: 'CANCELLED' }
