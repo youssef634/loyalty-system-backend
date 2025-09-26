@@ -131,6 +131,7 @@ export class UsersService {
                 qrCode: true,
                 createdAt: true
             },
+            orderBy,
         });
 
         const formattedUsers = users.map(user => ({
