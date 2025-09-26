@@ -9,7 +9,7 @@ import { RolesGuard } from '../common/roles.guard';
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 export class TransactionController {
     constructor(private readonly transactionService: TransactionService) { }
-    
+
     @Get('all-transactions')
     @Permissions('transactions')
     getAllTransactions() {
@@ -31,6 +31,8 @@ export class TransactionController {
         @Query('cafeProductId') cafeProductId?: number,
         @Query('restaurantProductId') restaurantProductId?: number,
         @Query('status') status?: TransactionStatus,
+        @Query('sortBy') sortBy?: string,
+        @Query('sortOrder') sortOrder?: 'asc' | 'desc',
     ) {
         return this.transactionService.getTransactions(req.user.id, Number(page), {
             limit: limit ? Number(limit) : undefined,
@@ -45,6 +47,8 @@ export class TransactionController {
             cafeProductId: cafeProductId ? Number(cafeProductId) : undefined,
             restaurantProductId: restaurantProductId ? Number(restaurantProductId) : undefined,
             status,
+            sortBy,
+            sortOrder
         });
     }
 
