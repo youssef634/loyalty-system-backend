@@ -31,6 +31,6 @@ export class PosController {
   @Get('print/:id')
   @Permissions('pos')
   async printInvoice(@Param('id', ParseIntPipe) invoiceId: number) {
-    return this.printService.printInvoice(invoiceId);
+    return this.printService.invokePrinter(invoiceId, 'emulator');
   }
 }

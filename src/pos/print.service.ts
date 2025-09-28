@@ -3,6 +3,7 @@ import escpos from 'escpos';
 import * as fs from 'fs';
 import { PrismaService } from '../prisma/prisma.service/prisma.service';
 import { DateTime } from 'luxon';
+import { Prisma } from '@prisma/client';
 
 // Register adapters
 escpos.USB = require('escpos-usb');
@@ -16,12 +17,22 @@ export class PrintService {
 
   constructor(private prisma: PrismaService) { }
 
+  async invokePrinter(
+    invoiceId: number,
+    mode: 'printer' | 'emulator' = 'emulator',
+ ): Promise<string> {
+    return await this.prisma.$transaction(async (tx) => {
+      return await this.printInvoice(invoiceId, mode, tx);
+    })
+  }
+
   async printInvoice(
     invoiceId: number,
     mode: 'printer' | 'emulator' = 'emulator',
+    tx: Prisma.TransactionClient
   ): Promise<string> {
     // Load invoice with items + user
-    const invoice = await this.prisma.invoice.findUnique({
+    const invoice = await tx.invoice.findUnique({
       where: { id: invoiceId },
       include: {
         user: true,
@@ -38,7 +49,7 @@ export class PrintService {
     if (!invoice) throw new NotFoundException(`Invoice ${invoiceId} not found`);
 
     // Get system settings
-    const settings = await this.prisma.settings.findUnique({ where: { userId: 1 } });
+    const settings = await tx.settings.findUnique({ where: { userId: 1 } });
     const timezone = settings?.timezone || 'UTC';
     const printerType = (settings?.printerType).toUpperCase();
     const printerIp = settings?.printerIp || null;
