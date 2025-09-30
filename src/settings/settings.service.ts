@@ -55,8 +55,10 @@ export class SettingsService {
             pointsPerIQD,
             printerType,
             printerIp,
-            title,
-            description,
+            enTitle,
+            arTitle,
+            enDescription,
+            arDescription,
             image,
         } = body;
 
@@ -104,8 +106,10 @@ export class SettingsService {
                 const updated = await this.prisma.settings.update({
                     where: { id: s.id },
                     data: {
-                        title: title || s.title,
-                        description: description || s.description,
+                        enTitle: enTitle || s.enTitle,
+                        arTitle: arTitle || s.arTitle,
+                        enDescription: enDescription || s.enDescription,
+                        arDescription: arDescription || s.arDescription,
                         imgUrl: imageUrl || s.imgUrl,
                         timezone: timezone || s.timezone,
                         enCurrency: enCurrency || s.enCurrency,
@@ -117,11 +121,11 @@ export class SettingsService {
                         printerIp: printerType === 'LAN' ? printerIp : s.printerIp,
                     },
                 });
-
-                updatedSettings.push(updated);
             }
 
-            return updatedSettings;
+            const globalSettings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+            return globalSettings;
+
         } else {
             // Regular users can only update timezone
             if (!timezone) throw new ForbiddenException('Only timezone can be updated');
