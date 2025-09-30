@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service/prisma.service';
+import { CloudPrismaService} from '../prisma/prisma.service/cloud-prisma.service';
 import { RewardStatus } from '@prisma/client';
 import { DateTime } from 'luxon';
 
 @Injectable()
 export class RewardService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: CloudPrismaService) { }
 
     async getRewards(
         currentUserId: number,

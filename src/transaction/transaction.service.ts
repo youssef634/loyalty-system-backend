@@ -1,11 +1,11 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service/prisma.service';
+import { CloudPrismaService} from '../prisma/prisma.service/cloud-prisma.service';
 import { DateTime } from 'luxon';
 import { TransactionStatus } from '@prisma/client';
 
 @Injectable()
 export class TransactionService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: CloudPrismaService) { }
 
     async getAllTransactions() {
         return this.prisma.transaction.findMany({

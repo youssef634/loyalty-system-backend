@@ -1,9 +1,20 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service/prisma.service';
+import { CloudPrismaService } from '../prisma/prisma.service/cloud-prisma.service';
+import * as fs from 'fs';
+import * as path from 'path';
+import axios from 'axios';
 
 @Injectable()
 export class SettingsService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: CloudPrismaService) { }
+
+    private getSettingsUploadPath() {
+        const uploadDir = path.join(process.cwd(), 'uploads/settings');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        return uploadDir;
+    }
 
     async getSettings(userId: number) {
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -12,7 +23,7 @@ export class SettingsService {
         if (user.role !== 'USER') {
             // Admin gets global settings (any admin's settings)
             return this.prisma.settings.findUnique({
-                where: { id : 1}
+                where: { id: 1 }
             });
         } else {
             // User gets their own settings if exists
@@ -20,83 +31,103 @@ export class SettingsService {
             if (!settings) {
                 // If not exist, return global admin settings
                 settings = await this.prisma.settings.findUnique({
-                    where: { id : 1}
+                    where: { id: 1 }
                 });
             }
             return settings;
         }
     }
 
-    async updateSettings(userId: number, body: any) {
+    async updateSettings(
+        userId: number,
+        body: any,
+        file?: Express.Multer.File,
+    ) {
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user) throw new ForbiddenException('User not found');
 
+        const {
+            timezone,
+            enCurrency,
+            arCurrency,
+            usdToIqd,
+            pointsPerDollar,
+            pointsPerIQD,
+            printerType,
+            printerIp,
+            title,
+            description,
+            image,
+        } = body;
+
+        const uploadDir = this.getSettingsUploadPath();
+        let imageUrl: string | undefined;
+
+        // Handle image upload
+        if (file) {
+            const fileName = `${Date.now()}_${file.originalname}`;
+            const filePath = path.join(uploadDir, fileName);
+            fs.writeFileSync(filePath, file.buffer);
+            imageUrl = `http://localhost:3000/uploads/settings/${fileName}`;
+        } else if (image && /^data:(image\/[a-z]+)?;base64,/.test(image)) {
+            const matches = image.match(/^data:(image\/[a-z]+)?;base64,(.+)$/);
+            const ext = matches?.[1]?.split('/')[1] || 'jpg';
+            const base64Data = matches?.[2] || '';
+            const fileName = `${Date.now()}_base64.${ext}`;
+            const filePath = path.join(uploadDir, fileName);
+            fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+            imageUrl = `http://localhost:3000/uploads/settings/${fileName}`;
+        } else if (image && /^https?:\/\//i.test(image)) {
+            const response = await axios.get(image, { responseType: 'arraybuffer' });
+            const ext = response.headers['content-type']?.split('/')[1] || 'jpg';
+            const fileName = `${Date.now()}_url.${ext}`;
+            const filePath = path.join(uploadDir, fileName);
+            fs.writeFileSync(filePath, response.data);
+            imageUrl = `http://localhost:3000/uploads/settings/${fileName}`;
+        } else if (image && image.startsWith('http://localhost:3000/uploads/settings/')) {
+            imageUrl = image;
+        }
+
         if (user.role !== 'USER') {
-            // Admin updates global settings
-            const { timezone, enCurrency, arCurrency, usdToIqd , pointsPerDollar, pointsPerIQD, printerType, printerIp } = body;
+            // Admin updates global settings → apply to ALL users
+            const allSettings = await this.prisma.settings.findMany();
 
-            // Find existing global settings (any admin's settings)
-            const existingGlobalSettings = await this.prisma.settings.findFirst({
-                where: { user: { role: 'ADMIN' } }
-            });
+            const updatedSettings = [];
 
-            if (existingGlobalSettings) {
-                // Update existing global settings
-                return this.prisma.settings.update({
-                    where: { id: existingGlobalSettings.id },
-                    data: {
-                        timezone: timezone || undefined,
-                        enCurrency: enCurrency || undefined,
-                        arCurrency: arCurrency || undefined,
-                        usdToIqd: usdToIqd || undefined,
-                        pointsPerDollar: pointsPerDollar || undefined,
-                        pointsPerIQD: pointsPerIQD || undefined,
-                        printerType: printerType || undefined,
-                        printerIp: printerType === 'LAN' ? printerIp : null, // only save IP if LAN
-                    }
-                });
-            } else {
-                // Create new global settings for this admin
-                return this.prisma.settings.create({
-                    data: {
-                        timezone,
-                        enCurrency,
-                        arCurrency,
-                        usdToIqd,
-                        pointsPerDollar,
-                        pointsPerIQD,
-                        printerType: printerType || 'USB',
-                        printerIp: printerType === 'LAN' ? printerIp : null,
-                        userId
-                    }
-                });
-            }
-        } else {
-            // User can only update their timezone
-            const { timezone } = body;
-            if (!timezone) throw new ForbiddenException('Only timezone can be updated');
+            for (const s of allSettings) {
+                // Delete old image if new image is uploaded
+                if (imageUrl && s.imgUrl && s.imgUrl.startsWith('http://localhost:3000/uploads/settings/')) {
+                    const oldImagePath = path.join(uploadDir, path.basename(s.imgUrl));
+                    if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+                }
 
-            let settings = await this.prisma.settings.findUnique({ where: { userId } });
-            if (!settings) {
-                // Copy admin settings, but set user's timezone
-                const adminSettings = await this.prisma.settings.findFirst({
-                    where: { user: { role: 'ADMIN' } }
-                });
-                if (!adminSettings) throw new ForbiddenException('Admin settings not found');
-                return this.prisma.settings.create({
+                const updated = await this.prisma.settings.update({
+                    where: { id: s.id },
                     data: {
-                        userId,
-                        timezone,
-                        enCurrency: adminSettings.enCurrency,
-                        arCurrency: adminSettings.arCurrency,
-                        usdToIqd: adminSettings.usdToIqd,
-                        pointsPerDollar: adminSettings.pointsPerDollar,
-                        pointsPerIQD: adminSettings.pointsPerIQD,
-                        printerType: adminSettings.printerType,
-                        printerIp: adminSettings.printerIp,
+                        title: title || s.title,
+                        description: description || s.description,
+                        imgUrl: imageUrl || s.imgUrl,
+                        timezone: timezone || s.timezone,
+                        enCurrency: enCurrency || s.enCurrency,
+                        arCurrency: arCurrency || s.arCurrency,
+                        usdToIqd: usdToIqd || s.usdToIqd,
+                        pointsPerDollar: pointsPerDollar || s.pointsPerDollar,
+                        pointsPerIQD: pointsPerIQD || s.pointsPerIQD,
+                        printerType: printerType || s.printerType,
+                        printerIp: printerType === 'LAN' ? printerIp : s.printerIp,
                     },
                 });
+
+                updatedSettings.push(updated);
             }
+
+            return updatedSettings;
+        } else {
+            // Regular users can only update timezone
+            if (!timezone) throw new ForbiddenException('Only timezone can be updated');
+
+            const settings = await this.prisma.settings.findUnique({ where: { userId } });
+            if (!settings) throw new ForbiddenException('Settings not found');
 
             return this.prisma.settings.update({
                 where: { userId },

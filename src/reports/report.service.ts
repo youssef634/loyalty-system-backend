@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service/prisma.service';
+import { CloudPrismaService} from '../prisma/prisma.service/cloud-prisma.service';
 import { Role } from '@prisma/client';
 
 @Injectable()
 export class ReportService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: CloudPrismaService) { }
 
     /** 1- Manager Report (exclude USERs, optional role filter) */
     async managerReport(role?: Role) {

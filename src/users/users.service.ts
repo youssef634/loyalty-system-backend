@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service/prisma.service';
+import { CloudPrismaService} from '../prisma/prisma.service/cloud-prisma.service';
 import { CreateUserDto, UpdateUserDto } from './dto/users.dto';
 import * as bcrypt from 'bcrypt';
 import * as QRCode from 'qrcode';
@@ -9,7 +9,7 @@ import { DateTime } from 'luxon';
 
 @Injectable()
 export class UsersService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: CloudPrismaService) { }
 
     private getQrUploadPath() {
         const uploadDir = path.join(process.cwd(), 'uploads', 'qrcodes');
