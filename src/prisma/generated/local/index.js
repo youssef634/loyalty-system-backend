@@ -300,7 +300,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\youssef\\Documents\\GitHub\\loyalty-backend\\src\\prisma\\generated\\local",
+      "value": "D:\\downloads\\loyality-system\\backend\\src\\prisma\\generated\\local",
       "fromEnvVar": null
     },
     "config": {
@@ -314,7 +314,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\youssef\\Documents\\GitHub\\loyalty-backend\\prisma\\local.prisma",
+    "sourceFilePath": "D:\\downloads\\loyality-system\\backend\\prisma\\local.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
