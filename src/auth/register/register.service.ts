@@ -4,6 +4,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { CloudPrismaService } from '../../prisma/prisma.service/cloud-prisma.service';
+import { LocalPrismaService } from '../../prisma/prisma.service/local-prisma.service';
+import { ConnectionService } from '../../connection/connection.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -16,13 +18,18 @@ import * as dotenv from 'dotenv';
 import * as QRCode from 'qrcode';
 import { Buffer } from 'buffer';
 import axios from 'axios';
+import { Logger } from '@nestjs/common';
 
 dotenv.config();
 
 @Injectable()
 export class RegisterService {
+  private readonly logger = new Logger(RegisterService.name);
+
   constructor(
-    private prisma: CloudPrismaService,
+    private cloudPrisma: CloudPrismaService,
+    private localPrisma: LocalPrismaService,
+    private connectionService: ConnectionService,
     private readonly jwt: JwtService,
   ) { }
 
@@ -47,7 +54,13 @@ export class RegisterService {
 
   // Register New User
   async signUp(data: RegisterDto) {
-    const existingUser = await this.prisma.user.findFirst({
+    const isOnline = await this.connectionService.checkConnection();
+
+    if (!isOnline) {
+      throw new BadRequestException('Registration requires internet connection');
+    }
+
+    const existingUser = await this.cloudPrisma.user.findFirst({
       where: { OR: [{ email: data.email }, { phone: data.phone }] },
     });
 
@@ -56,7 +69,7 @@ export class RegisterService {
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    const newUser = await this.prisma.user.create({
+    const newUser = await this.cloudPrisma.user.create({
       data: {
         enName: data.enName,
         arName: data.arName,
@@ -68,10 +81,31 @@ export class RegisterService {
 
     // Generate QR code and update the user
     const qrCode = await this.generateUserQrPng(newUser.id, newUser.email, newUser.phone);
-    const updatedUser = await this.prisma.user.update({
+    const updatedUser = await this.cloudPrisma.user.update({
       where: { id: newUser.id },
       data: { qrCode: qrCode }
     });
+
+    // Also create in local database for offline access
+    try {
+      await this.localPrisma.user.create({
+        data: {
+          id: updatedUser.id,
+          enName: updatedUser.enName,
+          arName: updatedUser.arName,
+          phone: updatedUser.phone,
+          email: updatedUser.email,
+          password: updatedUser.password,
+          qrCode: updatedUser.qrCode,
+          role: updatedUser.role,
+          points: updatedUser.points,
+          createdAt: updatedUser.createdAt,
+        },
+      });
+      this.logger.log(`User ${updatedUser.id} synced to local database`);
+    } catch (error) {
+      this.logger.warn(`Failed to sync new user to local DB: ${error}`);
+    }
 
     return {
       message: 'User registered successfully',
@@ -86,9 +120,22 @@ export class RegisterService {
     };
   }
 
-  // Login
+  // Login - Works offline
   async login(data: LoginDto) {
-    const user = await this.prisma.user.findFirst({
+    const isOnline = await this.connectionService.checkConnection();
+
+    if (isOnline) {
+      this.logger.log('🌐 Login via CLOUD database');
+      return await this.loginCloud(data);
+    } else {
+      this.logger.warn('📴 Login via LOCAL database (offline mode)');
+      return await this.loginLocal(data);
+    }
+  }
+
+  // Cloud login
+  private async loginCloud(data: LoginDto) {
+    const user = await this.cloudPrisma.user.findFirst({
       where: {
         OR: [
           { email: data.emailOrPhone },
@@ -108,16 +155,51 @@ export class RegisterService {
     if (user.role === 'USER') {
       permissions = ['dashboard', 'transactions', 'products', 'rewards'];
     } else if (user.role !== 'ADMIN') {
-      const rolePermissions = await this.prisma.rolePermission.findMany({
+      const rolePermissions = await this.cloudPrisma.rolePermission.findMany({
         where: { role: user.role },
         select: { page: true },
       });
       permissions = rolePermissions.map(p => p.page);
     }
 
+    // Sync user to local database for future offline access
+    try {
+      await this.localPrisma.user.upsert({
+        where: { id: user.id },
+        update: {
+          enName: user.enName,
+          arName: user.arName,
+          phone: user.phone,
+          email: user.email,
+          password: user.password,
+          profileImage: user.profileImage,
+          role: user.role,
+          points: user.points,
+          qrCode: user.qrCode,
+        },
+        create: {
+          id: user.id,
+          enName: user.enName,
+          arName: user.arName,
+          phone: user.phone,
+          email: user.email,
+          password: user.password,
+          profileImage: user.profileImage,
+          role: user.role,
+          points: user.points,
+          qrCode: user.qrCode,
+          createdAt: user.createdAt,
+        },
+      });
+      this.logger.log(`User ${user.id} synced to local database`);
+    } catch (error) {
+      this.logger.warn(`Failed to sync user to local DB: ${error}`);
+    }
+
     return {
       message: 'Login successful',
       token,
+      source: 'cloud',
       user: {
         id: user.id,
         enName: user.enName,
@@ -132,18 +214,75 @@ export class RegisterService {
     };
   }
 
-  // Get Profile
+  // Local login (offline)
+  private async loginLocal(data: LoginDto) {
+    const user = await this.localPrisma.user.findFirst({
+      where: {
+        OR: [
+          { email: data.emailOrPhone },
+          { phone: data.emailOrPhone }
+        ]
+      },
+    });
+    if (!user) throw new UnauthorizedException('Invalid email/phone or password. Note: You must login online at least once before using offline mode.');
+
+    const isPasswordValid = await bcrypt.compare(data.password, user.password);
+    if (!isPasswordValid) throw new UnauthorizedException('Invalid email/phone or password');
+
+    const token = await this.jwt.signAsync({ id: user.id });
+
+    let permissions: string[] = [];
+
+    if (user.role === 'USER') {
+      permissions = ['dashboard', 'transactions', 'products', 'rewards'];
+    } else if (user.role !== 'ADMIN') {
+      const rolePermissions = await this.localPrisma.rolePermission.findMany({
+        where: { role: user.role },
+        select: { page: true },
+      });
+      permissions = rolePermissions.map(p => p.page);
+    }
+
+    return {
+      message: 'Login successful (offline mode)',
+      token,
+      source: 'local',
+      offlineMode: true,
+      user: {
+        id: user.id,
+        enName: user.enName,
+        arName: user.arName,
+        email: user.email,
+        phone: user.phone,
+        profileImage: user.profileImage,
+        qrCode: user.qrCode,
+        role: user.role,
+        ...(permissions.length > 0 && { permissions }),
+      },
+    };
+  }
+
+  // Get Profile - Works offline
   async getProfile(userId: number) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const isOnline = await this.connectionService.checkConnection();
+
+    if (isOnline) {
+      return await this.getProfileCloud(userId);
+    } else {
+      return await this.getProfileLocal(userId);
+    }
+  }
+
+  private async getProfileCloud(userId: number) {
+    const user = await this.cloudPrisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new BadRequestException('User not found');
 
-    // Get permissions based on role (same logic as login)
     let permissions: string[] = [];
 
     if (user.role === 'USER') {
       permissions = ['transactions', 'products', 'rewards'];
     } else if (user.role !== 'ADMIN') {
-      const rolePermissions = await this.prisma.rolePermission.findMany({
+      const rolePermissions = await this.cloudPrisma.rolePermission.findMany({
         where: { role: user.role },
         select: { page: true },
       });
@@ -154,11 +293,41 @@ export class RegisterService {
     return {
       ...userData,
       ...(permissions.length > 0 && { permissions }),
+      source: 'cloud',
     };
   }
 
-  // Update Name
+  private async getProfileLocal(userId: number) {
+    const user = await this.localPrisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+
+    let permissions: string[] = [];
+
+    if (user.role === 'USER') {
+      permissions = ['transactions', 'products', 'rewards'];
+    } else if (user.role !== 'ADMIN') {
+      const rolePermissions = await this.localPrisma.rolePermission.findMany({
+        where: { role: user.role },
+        select: { page: true },
+      });
+      permissions = rolePermissions.map(p => p.page);
+    }
+
+    const { password, ...userData } = user;
+    return {
+      ...userData,
+      ...(permissions.length > 0 && { permissions }),
+      source: 'local',
+    };
+  }
+
+  // Update Name - Requires online
   async updateName(userId: number, dto: UpdateNameDto = {}) {
+    const isOnline = await this.connectionService.checkConnection();
+    if (!isOnline) {
+      throw new BadRequestException('Profile updates require internet connection');
+    }
+
     const { enName, arName } = dto;
 
     if (!enName && !arName) {
@@ -177,10 +346,20 @@ export class RegisterService {
     if (enName) updateData.enName = enName;
     if (arName) updateData.arName = arName;
 
-    const updatedUser = await this.prisma.user.update({
+    const updatedUser = await this.cloudPrisma.user.update({
       where: { id: userId },
       data: updateData,
     });
+
+    // Sync to local
+    try {
+      await this.localPrisma.user.update({
+        where: { id: userId },
+        data: updateData,
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to sync name update to local DB: ${error}`);
+    }
 
     const { password, ...userWithoutPassword } = updatedUser;
 
@@ -190,9 +369,14 @@ export class RegisterService {
     };
   }
 
-  // Upload Profile Image
+  // Upload Profile Image - Requires online
   async uploadProfileImage(userId: number, file?: Express.Multer.File, image?: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const isOnline = await this.connectionService.checkConnection();
+    if (!isOnline) {
+      throw new BadRequestException('Profile image upload requires internet connection');
+    }
+
+    const user = await this.cloudPrisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new BadRequestException('User not found');
 
     const uploadDir = path.join(process.cwd(), 'uploads', 'profiles');
@@ -258,10 +442,20 @@ export class RegisterService {
       imageUrl = image;
     }
 
-    const updatedUser = await this.prisma.user.update({
+    const updatedUser = await this.cloudPrisma.user.update({
       where: { id: userId },
       data: { profileImage: imageUrl },
     });
+
+    // Sync to local
+    try {
+      await this.localPrisma.user.update({
+        where: { id: userId },
+        data: { profileImage: imageUrl },
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to sync profile image to local DB: ${error}`);
+    }
 
     const { password, ...userWithoutPassword } = updatedUser;
     return {
@@ -269,15 +463,31 @@ export class RegisterService {
       user: userWithoutPassword,
     };
   }
-  // Remove Profile Image
+
+  // Remove Profile Image - Requires online
   async removeProfileImage(userId: number) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const isOnline = await this.connectionService.checkConnection();
+    if (!isOnline) {
+      throw new BadRequestException('Profile updates require internet connection');
+    }
+
+    const user = await this.cloudPrisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new BadRequestException('User not found');
 
-    const updatedUser = await this.prisma.user.update({
+    const updatedUser = await this.cloudPrisma.user.update({
       where: { id: userId },
       data: { profileImage: null },
     });
+
+    // Sync to local
+    try {
+      await this.localPrisma.user.update({
+        where: { id: userId },
+        data: { profileImage: null },
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to sync profile image removal to local DB: ${error}`);
+    }
 
     const { password, ...userWithoutPassword } = updatedUser;
     return {
@@ -286,11 +496,16 @@ export class RegisterService {
     };
   }
 
-  // Update Password
+  // Update Password - Requires online
   async updatePassword(userId: number, dto: UpdatePasswordDto) {
+    const isOnline = await this.connectionService.checkConnection();
+    if (!isOnline) {
+      throw new BadRequestException('Password updates require internet connection');
+    }
+
     const { oldPassword, newPassword, confirmPassword } = dto;
 
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.cloudPrisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new BadRequestException('User not found');
 
     const isOldPasswordCorrect = await bcrypt.compare(oldPassword, user.password);
@@ -304,10 +519,20 @@ export class RegisterService {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    const updatedUser = await this.prisma.user.update({
+    const updatedUser = await this.cloudPrisma.user.update({
       where: { id: userId },
       data: { password: hashedPassword },
     });
+
+    // Sync to local
+    try {
+      await this.localPrisma.user.update({
+        where: { id: userId },
+        data: { password: hashedPassword },
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to sync password to local DB: ${error}`);
+    }
 
     const { password, ...userWithoutPassword } = updatedUser;
 
@@ -317,19 +542,24 @@ export class RegisterService {
     };
   }
 
-  // Request reset password (hashed token in URL + expiry)
+  // Request reset password - Requires online
   async requestResetPassword({ email }: ResetPasswordRequestDto) {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const isOnline = await this.connectionService.checkConnection();
+    if (!isOnline) {
+      throw new BadRequestException('Password reset requires internet connection');
+    }
+
+    const user = await this.cloudPrisma.user.findUnique({ where: { email } });
     if (!user) throw new BadRequestException('User not found');
 
     const randomCode = crypto.randomBytes(32).toString('hex');
     const hashedToken = crypto.createHash('sha256').update(randomCode).digest('hex');
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    await this.prisma.resetPasswordToken.create({
+    await this.cloudPrisma.resetPasswordToken.create({
       data: {
         userId: user.id,
-        randomCode: 0, // not used anymore
+        randomCode: 0,
         token: hashedToken,
         expiresAt,
       },
@@ -355,25 +585,42 @@ export class RegisterService {
     return { message: 'Password reset link sent to your email.' };
   }
 
-  // Reset password (check hashed token + expiry)
+  // Reset password - Requires online
   async resetPassword({ token, newPassword }: ResetPasswordDto) {
-    const resetToken = await this.prisma.resetPasswordToken.findFirst({
+    const isOnline = await this.connectionService.checkConnection();
+    if (!isOnline) {
+      throw new BadRequestException('Password reset requires internet connection');
+    }
+
+    const resetToken = await this.cloudPrisma.resetPasswordToken.findFirst({
       where: { token },
     });
 
     if (!resetToken) throw new BadRequestException('Invalid or expired token');
 
     if (resetToken.expiresAt && resetToken.expiresAt < new Date()) {
-      await this.prisma.resetPasswordToken.delete({ where: { id: resetToken.id } });
+      await this.cloudPrisma.resetPasswordToken.delete({ where: { id: resetToken.id } });
       throw new BadRequestException('Token has expired');
     }
 
-    await this.prisma.user.update({
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.cloudPrisma.user.update({
       where: { id: resetToken.userId },
-      data: { password: await bcrypt.hash(newPassword, 10) },
+      data: { password: hashedPassword },
     });
 
-    await this.prisma.resetPasswordToken.deleteMany({ where: { id: resetToken.id } });
+    // Sync to local
+    try {
+      await this.localPrisma.user.update({
+        where: { id: resetToken.userId },
+        data: { password: hashedPassword },
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to sync password reset to local DB: ${error}`);
+    }
+
+    await this.cloudPrisma.resetPasswordToken.deleteMany({ where: { id: resetToken.id } });
 
     return { message: 'Password reset successfully.' };
   }

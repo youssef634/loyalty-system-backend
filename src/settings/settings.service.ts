@@ -1,12 +1,20 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
 import { CloudPrismaService } from '../prisma/prisma.service/cloud-prisma.service';
+import { LocalPrismaService } from '../prisma/prisma.service/local-prisma.service';
+import { ConnectionService } from '../connection/connection.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
 
 @Injectable()
 export class SettingsService {
-    constructor(private prisma: CloudPrismaService) { }
+    private readonly logger = new Logger(SettingsService.name);
+
+    constructor(
+        private cloudPrisma: CloudPrismaService,
+        private localPrisma: LocalPrismaService,
+        private connectionService: ConnectionService,
+    ) {}
 
     private getSettingsUploadPath() {
         const uploadDir = path.join(process.cwd(), 'uploads/settings');
@@ -17,20 +25,46 @@ export class SettingsService {
     }
 
     async getSettings(userId: number) {
-        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        const isOnline = this.connectionService.getConnectionStatus();
+
+        if (isOnline) {
+            return await this.getSettingsCloud(userId);
+        } else {
+            return await this.getSettingsLocal(userId);
+        }
+    }
+
+    private async getSettingsCloud(userId: number) {
+        const user = await this.cloudPrisma.user.findUnique({ where: { id: userId } });
         if (!user) throw new ForbiddenException('User not found');
 
         if (user.role !== 'USER') {
-            // Admin gets global settings (any admin's settings)
-            return this.prisma.settings.findUnique({
+            return this.cloudPrisma.settings.findUnique({
                 where: { id: 1 }
             });
         } else {
-            // User gets their own settings if exists
-            let settings = await this.prisma.settings.findUnique({ where: { userId } });
+            let settings = await this.cloudPrisma.settings.findUnique({ where: { userId } });
             if (!settings) {
-                // If not exist, return global admin settings
-                settings = await this.prisma.settings.findUnique({
+                settings = await this.cloudPrisma.settings.findUnique({
+                    where: { id: 1 }
+                });
+            }
+            return settings;
+        }
+    }
+
+    private async getSettingsLocal(userId: number) {
+        const user = await this.localPrisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new ForbiddenException('User not found');
+
+        if (user.role !== 'USER') {
+            return this.localPrisma.settings.findUnique({
+                where: { id: 1 }
+            });
+        } else {
+            let settings = await this.localPrisma.settings.findUnique({ where: { userId } });
+            if (!settings) {
+                settings = await this.localPrisma.settings.findUnique({
                     where: { id: 1 }
                 });
             }
@@ -43,7 +77,13 @@ export class SettingsService {
         body: any,
         file?: Express.Multer.File,
     ) {
-        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        const isOnline = this.connectionService.getConnectionStatus();
+        
+        if (!isOnline) {
+            throw new ForbiddenException('Settings updates require internet connection');
+        }
+
+        const user = await this.cloudPrisma.user.findUnique({ where: { id: userId } });
         if (!user) throw new ForbiddenException('User not found');
 
         const {
@@ -55,6 +95,7 @@ export class SettingsService {
             pointsPerIQD,
             printerType,
             printerIp,
+            port,
             enTitle,
             arTitle,
             enDescription,
@@ -92,9 +133,7 @@ export class SettingsService {
 
         if (user.role !== 'USER') {
             // Admin updates global settings → apply to ALL users
-            const allSettings = await this.prisma.settings.findMany();
-
-            const updatedSettings = [];
+            const allSettings = await this.cloudPrisma.settings.findMany();
 
             for (const s of allSettings) {
                 // Delete old image if new image is uploaded
@@ -103,40 +142,67 @@ export class SettingsService {
                     if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
                 }
 
-                const updated = await this.prisma.settings.update({
+                const updateData = {
+                    enTitle: enTitle || s.enTitle,
+                    arTitle: arTitle || s.arTitle,
+                    enDescription: enDescription || s.enDescription,
+                    arDescription: arDescription || s.arDescription,
+                    imgUrl: imageUrl || s.imgUrl,
+                    timezone: timezone || s.timezone,
+                    enCurrency: enCurrency || s.enCurrency,
+                    arCurrency: arCurrency || s.arCurrency,
+                    usdToIqd: usdToIqd ? parseFloat(usdToIqd) : s.usdToIqd,
+                    pointsPerDollar: pointsPerDollar ? parseFloat(pointsPerDollar) : s.pointsPerDollar,
+                    pointsPerIQD: pointsPerIQD ? parseFloat(pointsPerIQD) : s.pointsPerIQD,
+                    printerType: printerType || s.printerType,
+                    printerIp: printerType === 'LAN' ? printerIp : s.printerIp,
+                    port: printerType === 'LAN' && port ? parseInt(port) : s.port,
+                };
+
+                await this.cloudPrisma.settings.update({
                     where: { id: s.id },
-                    data: {
-                        enTitle: enTitle || s.enTitle,
-                        arTitle: arTitle || s.arTitle,
-                        enDescription: enDescription || s.enDescription,
-                        arDescription: arDescription || s.arDescription,
-                        imgUrl: imageUrl || s.imgUrl,
-                        timezone: timezone || s.timezone,
-                        enCurrency: enCurrency || s.enCurrency,
-                        arCurrency: arCurrency || s.arCurrency,
-                        usdToIqd: usdToIqd || s.usdToIqd,
-                        pointsPerDollar: pointsPerDollar || s.pointsPerDollar,
-                        pointsPerIQD: pointsPerIQD || s.pointsPerIQD,
-                        printerType: printerType || s.printerType,
-                        printerIp: printerType === 'LAN' ? printerIp : s.printerIp,
-                    },
+                    data: updateData,
                 });
+
+                // Sync to local database
+                try {
+                    await this.localPrisma.settings.update({
+                        where: { id: s.id },
+                        data: updateData,
+                    });
+                    this.logger.log(`Settings ${s.id} synced to local database`);
+                } catch (error) {
+                    this.logger.warn(`Failed to sync settings ${s.id} to local DB: ${error}`);
+                }
             }
 
-            const globalSettings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+            const globalSettings = await this.cloudPrisma.settings.findUnique({ where: { id: 1 } });
             return globalSettings;
 
         } else {
             // Regular users can only update timezone
             if (!timezone) throw new ForbiddenException('Only timezone can be updated');
 
-            const settings = await this.prisma.settings.findUnique({ where: { userId } });
+            const settings = await this.cloudPrisma.settings.findUnique({ where: { userId } });
             if (!settings) throw new ForbiddenException('Settings not found');
 
-            return this.prisma.settings.update({
+            const updated = await this.cloudPrisma.settings.update({
                 where: { userId },
                 data: { timezone },
             });
+
+            // Sync to local
+            try {
+                await this.localPrisma.settings.update({
+                    where: { userId },
+                    data: { timezone },
+                });
+                this.logger.log(`User ${userId} timezone synced to local database`);
+            } catch (error) {
+                this.logger.warn(`Failed to sync timezone to local DB: ${error}`);
+            }
+
+            return updated;
         }
     }
 }

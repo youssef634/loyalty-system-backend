@@ -12772,6 +12772,11 @@ export namespace Prisma {
   export type SettingsMinAggregateOutputType = {
     id: number | null
     userId: number | null
+    enTitle: string | null
+    arTitle: string | null
+    enDescription: string | null
+    arDescription: string | null
+    imgUrl: string | null
     timezone: string | null
     enCurrency: string | null
     arCurrency: string | null
@@ -12787,6 +12792,11 @@ export namespace Prisma {
   export type SettingsMaxAggregateOutputType = {
     id: number | null
     userId: number | null
+    enTitle: string | null
+    arTitle: string | null
+    enDescription: string | null
+    arDescription: string | null
+    imgUrl: string | null
     timezone: string | null
     enCurrency: string | null
     arCurrency: string | null
@@ -12802,6 +12812,11 @@ export namespace Prisma {
   export type SettingsCountAggregateOutputType = {
     id: number
     userId: number
+    enTitle: number
+    arTitle: number
+    enDescription: number
+    arDescription: number
+    imgUrl: number
     timezone: number
     enCurrency: number
     arCurrency: number
@@ -12837,6 +12852,11 @@ export namespace Prisma {
   export type SettingsMinAggregateInputType = {
     id?: true
     userId?: true
+    enTitle?: true
+    arTitle?: true
+    enDescription?: true
+    arDescription?: true
+    imgUrl?: true
     timezone?: true
     enCurrency?: true
     arCurrency?: true
@@ -12852,6 +12872,11 @@ export namespace Prisma {
   export type SettingsMaxAggregateInputType = {
     id?: true
     userId?: true
+    enTitle?: true
+    arTitle?: true
+    enDescription?: true
+    arDescription?: true
+    imgUrl?: true
     timezone?: true
     enCurrency?: true
     arCurrency?: true
@@ -12867,6 +12892,11 @@ export namespace Prisma {
   export type SettingsCountAggregateInputType = {
     id?: true
     userId?: true
+    enTitle?: true
+    arTitle?: true
+    enDescription?: true
+    arDescription?: true
+    imgUrl?: true
     timezone?: true
     enCurrency?: true
     arCurrency?: true
@@ -12969,6 +12999,11 @@ export namespace Prisma {
   export type SettingsGroupByOutputType = {
     id: number
     userId: number
+    enTitle: string | null
+    arTitle: string | null
+    enDescription: string | null
+    arDescription: string | null
+    imgUrl: string | null
     timezone: string
     enCurrency: string
     arCurrency: string
@@ -13003,6 +13038,11 @@ export namespace Prisma {
   export type SettingsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     userId?: boolean
+    enTitle?: boolean
+    arTitle?: boolean
+    enDescription?: boolean
+    arDescription?: boolean
+    imgUrl?: boolean
     timezone?: boolean
     enCurrency?: boolean
     arCurrency?: boolean
@@ -13019,6 +13059,11 @@ export namespace Prisma {
   export type SettingsSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     userId?: boolean
+    enTitle?: boolean
+    arTitle?: boolean
+    enDescription?: boolean
+    arDescription?: boolean
+    imgUrl?: boolean
     timezone?: boolean
     enCurrency?: boolean
     arCurrency?: boolean
@@ -13035,6 +13080,11 @@ export namespace Prisma {
   export type SettingsSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     userId?: boolean
+    enTitle?: boolean
+    arTitle?: boolean
+    enDescription?: boolean
+    arDescription?: boolean
+    imgUrl?: boolean
     timezone?: boolean
     enCurrency?: boolean
     arCurrency?: boolean
@@ -13051,6 +13101,11 @@ export namespace Prisma {
   export type SettingsSelectScalar = {
     id?: boolean
     userId?: boolean
+    enTitle?: boolean
+    arTitle?: boolean
+    enDescription?: boolean
+    arDescription?: boolean
+    imgUrl?: boolean
     timezone?: boolean
     enCurrency?: boolean
     arCurrency?: boolean
@@ -13063,7 +13118,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type SettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "timezone" | "enCurrency" | "arCurrency" | "usdToIqd" | "pointsPerDollar" | "pointsPerIQD" | "printerType" | "printerIp" | "port" | "updatedAt", ExtArgs["result"]["settings"]>
+  export type SettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "enTitle" | "arTitle" | "enDescription" | "arDescription" | "imgUrl" | "timezone" | "enCurrency" | "arCurrency" | "usdToIqd" | "pointsPerDollar" | "pointsPerIQD" | "printerType" | "printerIp" | "port" | "updatedAt", ExtArgs["result"]["settings"]>
   export type SettingsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -13082,6 +13137,11 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: number
       userId: number
+      enTitle: string | null
+      arTitle: string | null
+      enDescription: string | null
+      arDescription: string | null
+      imgUrl: string | null
       timezone: string
       enCurrency: string
       arCurrency: string
@@ -13518,6 +13578,11 @@ export namespace Prisma {
   interface SettingsFieldRefs {
     readonly id: FieldRef<"Settings", 'Int'>
     readonly userId: FieldRef<"Settings", 'Int'>
+    readonly enTitle: FieldRef<"Settings", 'String'>
+    readonly arTitle: FieldRef<"Settings", 'String'>
+    readonly enDescription: FieldRef<"Settings", 'String'>
+    readonly arDescription: FieldRef<"Settings", 'String'>
+    readonly imgUrl: FieldRef<"Settings", 'String'>
     readonly timezone: FieldRef<"Settings", 'String'>
     readonly enCurrency: FieldRef<"Settings", 'String'>
     readonly arCurrency: FieldRef<"Settings", 'String'>
@@ -16562,6 +16627,11 @@ export namespace Prisma {
   export const SettingsScalarFieldEnum: {
     id: 'id',
     userId: 'userId',
+    enTitle: 'enTitle',
+    arTitle: 'arTitle',
+    enDescription: 'enDescription',
+    arDescription: 'arDescription',
+    imgUrl: 'imgUrl',
     timezone: 'timezone',
     enCurrency: 'enCurrency',
     arCurrency: 'arCurrency',
@@ -17462,6 +17532,11 @@ export namespace Prisma {
     NOT?: SettingsWhereInput | SettingsWhereInput[]
     id?: IntFilter<"Settings"> | number
     userId?: IntFilter<"Settings"> | number
+    enTitle?: StringNullableFilter<"Settings"> | string | null
+    arTitle?: StringNullableFilter<"Settings"> | string | null
+    enDescription?: StringNullableFilter<"Settings"> | string | null
+    arDescription?: StringNullableFilter<"Settings"> | string | null
+    imgUrl?: StringNullableFilter<"Settings"> | string | null
     timezone?: StringFilter<"Settings"> | string
     enCurrency?: StringFilter<"Settings"> | string
     arCurrency?: StringFilter<"Settings"> | string
@@ -17478,6 +17553,11 @@ export namespace Prisma {
   export type SettingsOrderByWithRelationInput = {
     id?: SortOrder
     userId?: SortOrder
+    enTitle?: SortOrderInput | SortOrder
+    arTitle?: SortOrderInput | SortOrder
+    enDescription?: SortOrderInput | SortOrder
+    arDescription?: SortOrderInput | SortOrder
+    imgUrl?: SortOrderInput | SortOrder
     timezone?: SortOrder
     enCurrency?: SortOrder
     arCurrency?: SortOrder
@@ -17497,6 +17577,11 @@ export namespace Prisma {
     AND?: SettingsWhereInput | SettingsWhereInput[]
     OR?: SettingsWhereInput[]
     NOT?: SettingsWhereInput | SettingsWhereInput[]
+    enTitle?: StringNullableFilter<"Settings"> | string | null
+    arTitle?: StringNullableFilter<"Settings"> | string | null
+    enDescription?: StringNullableFilter<"Settings"> | string | null
+    arDescription?: StringNullableFilter<"Settings"> | string | null
+    imgUrl?: StringNullableFilter<"Settings"> | string | null
     timezone?: StringFilter<"Settings"> | string
     enCurrency?: StringFilter<"Settings"> | string
     arCurrency?: StringFilter<"Settings"> | string
@@ -17513,6 +17598,11 @@ export namespace Prisma {
   export type SettingsOrderByWithAggregationInput = {
     id?: SortOrder
     userId?: SortOrder
+    enTitle?: SortOrderInput | SortOrder
+    arTitle?: SortOrderInput | SortOrder
+    enDescription?: SortOrderInput | SortOrder
+    arDescription?: SortOrderInput | SortOrder
+    imgUrl?: SortOrderInput | SortOrder
     timezone?: SortOrder
     enCurrency?: SortOrder
     arCurrency?: SortOrder
@@ -17536,6 +17626,11 @@ export namespace Prisma {
     NOT?: SettingsScalarWhereWithAggregatesInput | SettingsScalarWhereWithAggregatesInput[]
     id?: IntWithAggregatesFilter<"Settings"> | number
     userId?: IntWithAggregatesFilter<"Settings"> | number
+    enTitle?: StringNullableWithAggregatesFilter<"Settings"> | string | null
+    arTitle?: StringNullableWithAggregatesFilter<"Settings"> | string | null
+    enDescription?: StringNullableWithAggregatesFilter<"Settings"> | string | null
+    arDescription?: StringNullableWithAggregatesFilter<"Settings"> | string | null
+    imgUrl?: StringNullableWithAggregatesFilter<"Settings"> | string | null
     timezone?: StringWithAggregatesFilter<"Settings"> | string
     enCurrency?: StringWithAggregatesFilter<"Settings"> | string
     arCurrency?: StringWithAggregatesFilter<"Settings"> | string
@@ -18374,6 +18469,11 @@ export namespace Prisma {
   }
 
   export type SettingsCreateInput = {
+    enTitle?: string | null
+    arTitle?: string | null
+    enDescription?: string | null
+    arDescription?: string | null
+    imgUrl?: string | null
     timezone?: string
     enCurrency: string
     arCurrency: string
@@ -18390,6 +18490,11 @@ export namespace Prisma {
   export type SettingsUncheckedCreateInput = {
     id?: number
     userId: number
+    enTitle?: string | null
+    arTitle?: string | null
+    enDescription?: string | null
+    arDescription?: string | null
+    imgUrl?: string | null
     timezone?: string
     enCurrency: string
     arCurrency: string
@@ -18403,6 +18508,11 @@ export namespace Prisma {
   }
 
   export type SettingsUpdateInput = {
+    enTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    arTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    enDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    arDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    imgUrl?: NullableStringFieldUpdateOperationsInput | string | null
     timezone?: StringFieldUpdateOperationsInput | string
     enCurrency?: StringFieldUpdateOperationsInput | string
     arCurrency?: StringFieldUpdateOperationsInput | string
@@ -18419,6 +18529,11 @@ export namespace Prisma {
   export type SettingsUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
     userId?: IntFieldUpdateOperationsInput | number
+    enTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    arTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    enDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    arDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    imgUrl?: NullableStringFieldUpdateOperationsInput | string | null
     timezone?: StringFieldUpdateOperationsInput | string
     enCurrency?: StringFieldUpdateOperationsInput | string
     arCurrency?: StringFieldUpdateOperationsInput | string
@@ -18434,6 +18549,11 @@ export namespace Prisma {
   export type SettingsCreateManyInput = {
     id?: number
     userId: number
+    enTitle?: string | null
+    arTitle?: string | null
+    enDescription?: string | null
+    arDescription?: string | null
+    imgUrl?: string | null
     timezone?: string
     enCurrency: string
     arCurrency: string
@@ -18447,6 +18567,11 @@ export namespace Prisma {
   }
 
   export type SettingsUpdateManyMutationInput = {
+    enTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    arTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    enDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    arDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    imgUrl?: NullableStringFieldUpdateOperationsInput | string | null
     timezone?: StringFieldUpdateOperationsInput | string
     enCurrency?: StringFieldUpdateOperationsInput | string
     arCurrency?: StringFieldUpdateOperationsInput | string
@@ -18462,6 +18587,11 @@ export namespace Prisma {
   export type SettingsUncheckedUpdateManyInput = {
     id?: IntFieldUpdateOperationsInput | number
     userId?: IntFieldUpdateOperationsInput | number
+    enTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    arTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    enDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    arDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    imgUrl?: NullableStringFieldUpdateOperationsInput | string | null
     timezone?: StringFieldUpdateOperationsInput | string
     enCurrency?: StringFieldUpdateOperationsInput | string
     arCurrency?: StringFieldUpdateOperationsInput | string
@@ -19442,6 +19572,11 @@ export namespace Prisma {
   export type SettingsCountOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
+    enTitle?: SortOrder
+    arTitle?: SortOrder
+    enDescription?: SortOrder
+    arDescription?: SortOrder
+    imgUrl?: SortOrder
     timezone?: SortOrder
     enCurrency?: SortOrder
     arCurrency?: SortOrder
@@ -19466,6 +19601,11 @@ export namespace Prisma {
   export type SettingsMaxOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
+    enTitle?: SortOrder
+    arTitle?: SortOrder
+    enDescription?: SortOrder
+    arDescription?: SortOrder
+    imgUrl?: SortOrder
     timezone?: SortOrder
     enCurrency?: SortOrder
     arCurrency?: SortOrder
@@ -19481,6 +19621,11 @@ export namespace Prisma {
   export type SettingsMinOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
+    enTitle?: SortOrder
+    arTitle?: SortOrder
+    enDescription?: SortOrder
+    arDescription?: SortOrder
+    imgUrl?: SortOrder
     timezone?: SortOrder
     enCurrency?: SortOrder
     arCurrency?: SortOrder
@@ -21036,6 +21181,11 @@ export namespace Prisma {
   }
 
   export type SettingsCreateWithoutUserInput = {
+    enTitle?: string | null
+    arTitle?: string | null
+    enDescription?: string | null
+    arDescription?: string | null
+    imgUrl?: string | null
     timezone?: string
     enCurrency: string
     arCurrency: string
@@ -21050,6 +21200,11 @@ export namespace Prisma {
 
   export type SettingsUncheckedCreateWithoutUserInput = {
     id?: number
+    enTitle?: string | null
+    arTitle?: string | null
+    enDescription?: string | null
+    arDescription?: string | null
+    imgUrl?: string | null
     timezone?: string
     enCurrency: string
     arCurrency: string
@@ -21207,6 +21362,11 @@ export namespace Prisma {
   }
 
   export type SettingsUpdateWithoutUserInput = {
+    enTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    arTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    enDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    arDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    imgUrl?: NullableStringFieldUpdateOperationsInput | string | null
     timezone?: StringFieldUpdateOperationsInput | string
     enCurrency?: StringFieldUpdateOperationsInput | string
     arCurrency?: StringFieldUpdateOperationsInput | string
@@ -21221,6 +21381,11 @@ export namespace Prisma {
 
   export type SettingsUncheckedUpdateWithoutUserInput = {
     id?: IntFieldUpdateOperationsInput | number
+    enTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    arTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    enDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    arDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    imgUrl?: NullableStringFieldUpdateOperationsInput | string | null
     timezone?: StringFieldUpdateOperationsInput | string
     enCurrency?: StringFieldUpdateOperationsInput | string
     arCurrency?: StringFieldUpdateOperationsInput | string

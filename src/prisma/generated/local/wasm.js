@@ -214,6 +214,11 @@ exports.Prisma.TransactionScalarFieldEnum = {
 exports.Prisma.SettingsScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  enTitle: 'enTitle',
+  arTitle: 'arTitle',
+  enDescription: 'enDescription',
+  arDescription: 'arDescription',
+  imgUrl: 'imgUrl',
   timezone: 'timezone',
   enCurrency: 'enCurrency',
   arCurrency: 'arCurrency',

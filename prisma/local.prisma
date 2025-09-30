@@ -136,6 +136,11 @@ model Transaction {
 model Settings {
   id                  Int     @id @default(autoincrement())
   userId              Int     @unique
+  enTitle             String?  
+  arTitle             String? 
+  enDescription       String?  
+  arDescription       String? 
+  imgUrl              String?
   timezone            String  @default("UTC")
   enCurrency          String
   arCurrency          String

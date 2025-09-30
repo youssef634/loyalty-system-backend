@@ -1,9 +1,10 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import escpos from 'escpos';
 import * as fs from 'fs';
-import { CloudPrismaService } from '../prisma/prisma.service/cloud-prisma.service';
 import { DateTime } from 'luxon';
-import { Prisma } from '@prisma/client';
+import { CloudPrismaService } from '../prisma/prisma.service/cloud-prisma.service';
+import { LocalPrismaService } from '../prisma/prisma.service/local-prisma.service';
+import { ConnectionService } from '../connection/connection.service';
 
 // Register adapters
 escpos.USB = require('escpos-usb');
@@ -15,23 +16,35 @@ escpos.File = require('escpos-file');
 export class PrintService {
   private readonly logger = new Logger(PrintService.name);
 
-  constructor(private prisma: CloudPrismaService) { }
+  constructor(
+    private cloudPrisma: CloudPrismaService,
+    private localPrisma: LocalPrismaService,
+    private connectionService: ConnectionService,
+  ) { }
 
   async invokePrinter(
     invoiceId: number,
     mode: 'printer' | 'emulator' = 'emulator',
- ): Promise<string> {
-    return await this.prisma.$transaction(async (tx) => {
-      return await this.printInvoice(invoiceId, mode, tx);
-    })
+  ): Promise<string> {
+    const isOnline = this.connectionService.getConnectionStatus();
+
+    if (isOnline) {
+      return await this.cloudPrisma.$transaction(async (tx) => {
+        return await this.printInvoiceCloud(invoiceId, mode, tx);
+      });
+    } else {
+      return await this.localPrisma.$transaction(async (tx) => {
+        return await this.printInvoiceLocal(invoiceId, mode, tx);
+      });
+    }
   }
 
-  async printInvoice(
+  // Cloud database print method
+  private async printInvoiceCloud(
     invoiceId: number,
     mode: 'printer' | 'emulator' = 'emulator',
-    tx: Prisma.TransactionClient
+    tx: any,
   ): Promise<string> {
-    // Load invoice with items + user
     const invoice = await tx.invoice.findUnique({
       where: { id: invoiceId },
       include: {
@@ -48,33 +61,65 @@ export class PrintService {
 
     if (!invoice) throw new NotFoundException(`Invoice ${invoiceId} not found`);
 
-    // Get system settings
     const settings = await tx.settings.findUnique({ where: { userId: 1 } });
+    return await this.processPrint(invoice, settings, mode);
+  }
+
+  // Local database print method
+  private async printInvoiceLocal(
+    invoiceId: number,
+    mode: 'printer' | 'emulator' = 'emulator',
+    tx: any,
+  ): Promise<string> {
+    const invoice = await tx.invoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        user: true,
+        items: {
+          include: {
+            category: true,
+            cafeProduct: true,
+            restaurantProduct: true,
+          },
+        },
+      },
+    });
+
+    if (!invoice) throw new NotFoundException(`Invoice ${invoiceId} not found`);
+
+    const settings = await tx.settings.findUnique({ where: { userId: 1 } });
+    return await this.processPrint(invoice, settings, mode);
+  }
+
+  // Common print processing logic
+  private async processPrint(
+    invoice: any,
+    settings: any,
+    mode: 'printer' | 'emulator',
+  ): Promise<string> {
     const timezone = settings?.timezone || 'UTC';
-    const printerType = (settings?.printerType).toUpperCase();
+    const printerType = settings?.printerType?.toUpperCase() || 'EMULATOR';
     const printerIp = settings?.printerIp || null;
     const port = settings?.port || null;
 
-    // Format date
     const formattedDate = DateTime.fromJSDate(invoice.createdAt, { zone: 'utc' })
       .setZone(timezone)
       .toFormat('MMM dd, yyyy, hh:mm a');
 
-    // Totals
     const subtotal = invoice.items.reduce((sum, item) => sum + item.total, 0);
     const discount = invoice.discount ?? 0;
     const total = invoice.totalPrice;
 
-    if (mode === 'printer') {
+    if (mode === 'printer' && printerType !== 'EMULATOR') {
       try {
         let device: any;
 
         if (printerType === 'USB') {
           device = new escpos.USB();
         } else if (printerType === 'LAN' && printerIp) {
-          device = new escpos.Network(printerIp, port); // default port
+          device = new escpos.Network(printerIp, port);
         } else {
-          this.logger.warn('⚠️ No valid printer configuration in settings');
+          this.logger.warn('⚠️ No valid printer configuration, using emulator');
           return await this.emulator(invoice, formattedDate, subtotal, discount, total);
         }
 
@@ -84,9 +129,7 @@ export class PrintService {
           device.open((err) => {
             if (err) {
               this.logger.error('❌ Failed to open printer:', err);
-              resolve(
-                `⚠️ Printer not found. Invoice ${invoiceId} could not be printed.`,
-              );
+              resolve(`⚠️ Printer not found. Invoice ${invoice.id} could not be printed.`);
               return;
             }
 
@@ -97,34 +140,21 @@ export class PrintService {
               .text('*** LOYALTY RECEIPT ***')
               .text(`Invoice #${invoice.id}`)
               .text(`Date: ${formattedDate}`)
-              .text(
-                `Customer: ${invoice.user?.enName ??
-                invoice.phone ??
-                invoice.email ??
-                'Guest'
-                }`,
-              )
+              .text(`Customer: ${invoice.user?.enName ?? invoice.phone ?? invoice.email ?? 'Guest'}`)
               .drawLine();
 
             printer.align('lt').text('Item               Price   Qty   Total');
             printer.drawLine();
 
             invoice.items.forEach((item) => {
-              const name =
-                item.cafeProduct?.enName ||
-                item.restaurantProduct?.enName ||
-                'Item';
+              const name = item.cafeProduct?.enName || item.restaurantProduct?.enName || 'Item';
               const unitPrice = item.price.toFixed(2);
               const qty = `x${item.quantity}`;
               const lineTotal = item.total.toFixed(2);
-
-              const line = `${name.padEnd(18).slice(0, 18)} ${unitPrice.padStart(
-                6,
-              )}  ${qty.padStart(3)}  ${lineTotal.padStart(7)}`;
+              const line = `${name.padEnd(18).slice(0, 18)} ${unitPrice.padStart(6)}  ${qty.padStart(3)}  ${lineTotal.padStart(7)}`;
               printer.text(line);
             });
 
-            // Summary section
             if (discount > 0) {
               printer.text(`SUBTOTAL: ${subtotal.toFixed(2)}`);
               printer.text(`DISCOUNT: ${discount}%`);
@@ -135,18 +165,15 @@ export class PrintService {
               .cut()
               .close();
 
-            this.logger.log(
-              `🖨️ Invoice ${invoiceId} sent to ${printerType} printer`,
-            );
-            resolve(`Invoice ${invoiceId} printed on ${printerType} device`);
+            this.logger.log(`🖨️ Invoice ${invoice.id} sent to ${printerType} printer`);
+            resolve(`Invoice ${invoice.id} printed on ${printerType} device`);
           });
         });
       } catch (err) {
         this.logger.error('❌ Error while printing:', err);
-        return `⚠️ Printer not found. Invoice ${invoiceId} could not be printed.`;
+        return `⚠️ Printer not found. Invoice ${invoice.id} could not be printed.`;
       }
     } else {
-      // Fallback to emulator
       return await this.emulator(invoice, formattedDate, subtotal, discount, total);
     }
   }
@@ -164,28 +191,20 @@ export class PrintService {
     lines.push('*** LOYALTY RECEIPT ***');
     lines.push(`Invoice #${invoice.id}`);
     lines.push(`Date: ${formattedDate}`);
-    lines.push(
-      `Customer: ${invoice.user?.enName ?? invoice.phone ?? invoice.email ?? 'Guest'
-      }`,
-    );
+    lines.push(`Customer: ${invoice.user?.enName ?? invoice.phone ?? invoice.email ?? 'Guest'}`);
     lines.push('--------------------------------------');
     lines.push('Item               Price   Qty   Total');
     lines.push('--------------------------------------');
 
     invoice.items.forEach((item) => {
-      const name =
-        item.cafeProduct?.enName || item.restaurantProduct?.enName || 'Item';
+      const name = item.cafeProduct?.enName || item.restaurantProduct?.enName || 'Item';
       const unitPrice = item.price.toFixed(2);
       const qty = `x${item.quantity}`;
       const lineTotal = item.total.toFixed(2);
-
-      const line = `${name.padEnd(18).slice(0, 18)} ${unitPrice.padStart(
-        6,
-      )}  ${qty.padStart(3)}  ${lineTotal.padStart(7)}`;
+      const line = `${name.padEnd(18).slice(0, 18)} ${unitPrice.padStart(6)}  ${qty.padStart(3)}  ${lineTotal.padStart(7)}`;
       lines.push(line);
     });
 
-    // Emulator summary section
     if (discount > 0) {
       lines.push(`SUBTOTAL: ${subtotal.toFixed(2)}`);
       lines.push(`DISCOUNT: ${discount}%`);
