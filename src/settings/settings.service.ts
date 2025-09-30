@@ -46,7 +46,6 @@ export class SettingsService {
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user) throw new ForbiddenException('User not found');
 
-        // Extract new fields
         const {
             timezone,
             enCurrency,
@@ -61,28 +60,24 @@ export class SettingsService {
             image,
         } = body;
 
-        // ✅ Handle image upload like addProduct
-        let imageUrl: string | undefined;
         const uploadDir = this.getSettingsUploadPath();
+        let imageUrl: string | undefined;
 
+        // Handle image upload
         if (file) {
             const fileName = `${Date.now()}_${file.originalname}`;
             const filePath = path.join(uploadDir, fileName);
             fs.writeFileSync(filePath, file.buffer);
             imageUrl = `http://localhost:3000/uploads/settings/${fileName}`;
-        } else if (image && /^data:image\/[a-z]+;base64,/.test(image)) {
-            const matches = image.match(/^data:image\/([a-z]+);base64,(.+)$/);
-            const ext = matches ? matches[1] : 'jpg';
-            const base64Data = matches ? matches[2] : '';
+        } else if (image && /^data:(image\/[a-z]+)?;base64,/.test(image)) {
+            const matches = image.match(/^data:(image\/[a-z]+)?;base64,(.+)$/);
+            const ext = matches?.[1]?.split('/')[1] || 'jpg';
+            const base64Data = matches?.[2] || '';
             const fileName = `${Date.now()}_base64.${ext}`;
             const filePath = path.join(uploadDir, fileName);
             fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
             imageUrl = `http://localhost:3000/uploads/settings/${fileName}`;
-        } else if (
-            image &&
-            /^https?:\/\//i.test(image) &&
-            !image.startsWith('http://localhost:3000/uploads/settings/')
-        ) {
+        } else if (image && /^https?:\/\//i.test(image)) {
             const response = await axios.get(image, { responseType: 'arraybuffer' });
             const ext = response.headers['content-type']?.split('/')[1] || 'jpg';
             const fileName = `${Date.now()}_url.${ext}`;
@@ -94,73 +89,45 @@ export class SettingsService {
         }
 
         if (user.role !== 'USER') {
-            // ✅ Admin updates global settings
-            const existingGlobalSettings = await this.prisma.settings.findFirst({
-                where: { user: { role: 'ADMIN' } },
-            });
+            // Admin updates global settings → apply to ALL users
+            const allSettings = await this.prisma.settings.findMany();
 
-            if (existingGlobalSettings) {
-                return this.prisma.settings.update({
-                    where: { id: existingGlobalSettings.id },
+            const updatedSettings = [];
+
+            for (const s of allSettings) {
+                // Delete old image if new image is uploaded
+                if (imageUrl && s.imgUrl && s.imgUrl.startsWith('http://localhost:3000/uploads/settings/')) {
+                    const oldImagePath = path.join(uploadDir, path.basename(s.imgUrl));
+                    if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+                }
+
+                const updated = await this.prisma.settings.update({
+                    where: { id: s.id },
                     data: {
-                        timezone: timezone || undefined,
-                        enCurrency: enCurrency || undefined,
-                        arCurrency: arCurrency || undefined,
-                        usdToIqd: usdToIqd || undefined,
-                        pointsPerDollar: pointsPerDollar || undefined,
-                        pointsPerIQD: pointsPerIQD || undefined,
-                        printerType: printerType || undefined,
-                        printerIp: printerType === 'LAN' ? printerIp : null,
-                        title: title || undefined,
-                        description: description || undefined,
-                        imgUrl: imageUrl || undefined,
+                        title: title || s.title,
+                        description: description || s.description,
+                        imgUrl: imageUrl || s.imgUrl,
+                        timezone: timezone || s.timezone,
+                        enCurrency: enCurrency || s.enCurrency,
+                        arCurrency: arCurrency || s.arCurrency,
+                        usdToIqd: usdToIqd || s.usdToIqd,
+                        pointsPerDollar: pointsPerDollar || s.pointsPerDollar,
+                        pointsPerIQD: pointsPerIQD || s.pointsPerIQD,
+                        printerType: printerType || s.printerType,
+                        printerIp: printerType === 'LAN' ? printerIp : s.printerIp,
                     },
                 });
-            } else {
-                return this.prisma.settings.create({
-                    data: {
-                        userId,
-                        timezone,
-                        enCurrency,
-                        arCurrency,
-                        usdToIqd,
-                        pointsPerDollar,
-                        pointsPerIQD,
-                        printerType: printerType || 'USB',
-                        printerIp: printerType === 'LAN' ? printerIp : null,
-                        title,
-                        description,
-                        imgUrl: imageUrl,
-                    },
-                });
+
+                updatedSettings.push(updated);
             }
+
+            return updatedSettings;
         } else {
-            // ✅ User can only update timezone
+            // Regular users can only update timezone
             if (!timezone) throw new ForbiddenException('Only timezone can be updated');
 
-            let settings = await this.prisma.settings.findUnique({ where: { userId } });
-            if (!settings) {
-                const adminSettings = await this.prisma.settings.findFirst({
-                    where: { user: { role: 'ADMIN' } },
-                });
-                if (!adminSettings) throw new ForbiddenException('Admin settings not found');
-                return this.prisma.settings.create({
-                    data: {
-                        userId,
-                        timezone,
-                        enCurrency: adminSettings.enCurrency,
-                        arCurrency: adminSettings.arCurrency,
-                        usdToIqd: adminSettings.usdToIqd,
-                        pointsPerDollar: adminSettings.pointsPerDollar,
-                        pointsPerIQD: adminSettings.pointsPerIQD,
-                        printerType: adminSettings.printerType,
-                        printerIp: adminSettings.printerIp,
-                        title: adminSettings.title,
-                        description: adminSettings.description,
-                        imgUrl: adminSettings.imgUrl,
-                    },
-                });
-            }
+            const settings = await this.prisma.settings.findUnique({ where: { userId } });
+            if (!settings) throw new ForbiddenException('Settings not found');
 
             return this.prisma.settings.update({
                 where: { userId },
