@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import escpos from 'escpos';
 import * as fs from 'fs';
-import { PrismaService } from '../prisma/prisma.service/prisma.service';
+import { CloudPrismaService } from '../prisma/prisma.service/cloud-prisma.service';
 import { DateTime } from 'luxon';
 import { Prisma } from '@prisma/client';
 
@@ -15,7 +15,7 @@ escpos.File = require('escpos-file');
 export class PrintService {
   private readonly logger = new Logger(PrintService.name);
 
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: CloudPrismaService) { }
 
   async invokePrinter(
     invoiceId: number,

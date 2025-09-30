@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service/prisma.service';
+import { CloudPrismaService} from '../prisma/prisma.service/cloud-prisma.service';
 import { CreateUserDto, UpdateUserDto } from '../users/dto/users.dto';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
 
 @Injectable()
 export class ManagersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: CloudPrismaService) {}
 
   async createManager(data: CreateUserDto) {
     if (!data.role || data.role === Role.USER) {

@@ -3,7 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service/prisma.service';
+import { CloudPrismaService } from '../../prisma/prisma.service/cloud-prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -22,7 +22,7 @@ dotenv.config();
 @Injectable()
 export class RegisterService {
   constructor(
-    private prisma: PrismaService,
+    private prisma: CloudPrismaService,
     private readonly jwt: JwtService,
   ) { }
 

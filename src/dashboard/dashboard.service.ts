@@ -1,11 +1,11 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service/prisma.service';
+import { CloudPrismaService } from '../prisma/prisma.service/cloud-prisma.service';
 import { Role } from '@prisma/client';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 
 @Injectable()
 export class DashboardService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: CloudPrismaService) { }
 
     async getDashboardData(currentUserId: number) {
         const user = await this.prisma.user.findUnique({ where: { id: currentUserId } });

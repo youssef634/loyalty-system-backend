@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service/prisma.service';
+import { CloudPrismaService } from '../../prisma/prisma.service/cloud-prisma.service';
 import { CreateRestaurantProductDto, UpdateRestaurantProductDto } from './dto/restaurant.dto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -12,7 +12,7 @@ import axios from 'axios';
 
 @Injectable()
 export class RestaurantProductsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: CloudPrismaService) { }
 
   async getProducts(
     page: number = 1,

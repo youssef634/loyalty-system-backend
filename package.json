@@ -9,13 +9,19 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
+    "prebuild": "npm run prisma:generate:all",
     "build": "nest build",
+    "postbuild": "npm run copy-prisma",
+    "copy-prisma": "cpx \"src/prisma/generated/**/*\" \"dist/prisma/generated\"",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "prisma:generate:cloud": "prisma generate --schema=prisma/schema.prisma",
+    "prisma:generate:local": "prisma generate --schema=prisma/local.prisma",
+    "prisma:generate:all": "npm run prisma:generate:cloud && npm run prisma:generate:local"
   },
   "dependencies": {
     "@fast-csv/format": "^5.0.5",
@@ -74,6 +80,7 @@
     "@types/qrcode": "^1.5.5",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "cpx": "^1.5.0",
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",

@@ -5,13 +5,13 @@ import { Permissions } from '../common/permissions.decorator';
 import { RolesGuard } from '../common/roles.guard';
 import { Role } from '@prisma/client';
 import moment from 'moment-timezone';
-import { PrismaService } from '../prisma/prisma.service/prisma.service';
+import { CloudPrismaService} from '../prisma/prisma.service/cloud-prisma.service';
 
 @Controller('reports')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 export class ReportController {
     constructor(private readonly reportService: ReportService
-        , private prisma: PrismaService
+        , private prisma: CloudPrismaService
     ) { }
 
     /** 1- Manager Report */

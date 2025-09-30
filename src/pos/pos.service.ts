@@ -1,11 +1,11 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service/prisma.service';
+import { CloudPrismaService } from '../prisma/prisma.service/cloud-prisma.service';
 import { PrintService } from './print.service';
 
 @Injectable()
 export class PosService {
   constructor(
-    private prisma: PrismaService,
+    private prisma: CloudPrismaService,
     private printService: PrintService,
   ) { }
 

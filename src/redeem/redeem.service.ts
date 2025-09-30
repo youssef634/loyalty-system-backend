@@ -1,10 +1,10 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service/prisma.service';
+import { CloudPrismaService} from '../prisma/prisma.service/cloud-prisma.service';
 import { RewardStatus } from '@prisma/client';
 
 @Injectable()
 export class RedeemService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: CloudPrismaService) { }
 
     async redeemPoints(userId: number, productId: number, type: 'cafe' | 'restaurant') {
         // Check user

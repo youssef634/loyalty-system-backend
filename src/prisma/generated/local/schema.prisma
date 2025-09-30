@@ -1,0 +1,210 @@
+// local.prisma
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/prisma/generated/local"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("LOCAL_DATABASE_URL")
+}
+
+model User {
+  id                  Int                  @id @default(autoincrement())
+  enName              String
+  arName              String
+  phone               String               @unique
+  email               String               @unique
+  password            String
+  profileImage        String?
+  role                Role                 @default(USER)
+  points              Float                @default(0)
+  qrCode              String?
+  createdAt           DateTime             @default(now())
+  transactions        Transaction[]
+  resetPasswordTokens ResetPasswordToken[]
+  myRewards           MyReward[]
+  settings            Settings?
+  invoices            Invoice[]
+}
+
+model RolePermission {
+  id   Int    @id @default(autoincrement())
+  role Role
+  page String
+
+  @@unique([role, page])
+}
+
+model ResetPasswordToken {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  randomCode Int
+  token      String   @db.VarChar
+  expiresAt  DateTime
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@map("resetPasswordToken")
+}
+
+model Category {
+  id        Int          @id @default(autoincrement())
+  enName    String
+  arName    String
+  type      CategoryType
+  createdAt DateTime     @default(now())
+
+  InvoiceItem        InvoiceItem[]
+  cafeProducts       CafeProduct[]
+  restaurantProducts RestaurantProduct[]
+}
+
+model CafeProduct {
+  id           Int           @id @default(autoincrement())
+  enName       String
+  arName       String
+  image        String?
+  price        Float
+  points       Int
+  type         String        @default("cafe")
+  categoryId   Int?
+  category     Category?     @relation(fields: [categoryId], references: [id])
+  myRewards    MyReward[]
+  transactions Transaction[]
+  invoice      InvoiceItem[]
+}
+
+model RestaurantProduct {
+  id           Int           @id @default(autoincrement())
+  enName       String
+  arName       String
+  image        String?
+  price        Float
+  points       Int
+  type         String        @default("restaurant")
+  categoryId   Int?
+  category     Category?     @relation(fields: [categoryId], references: [id])
+  myRewards    MyReward[]
+  transactions Transaction[]
+  invoice      InvoiceItem[]
+}
+
+model Reward {
+  id          Int     @id @default(autoincrement())
+  name        String
+  costPoints  Int
+  description String?
+}
+
+model MyReward {
+  id                  Int          @id @default(autoincrement())
+  userId              Int
+  cafeProductId       Int?
+  restaurantProductId Int?
+  points              Int
+  type                String // "cafe" or "restaurant"
+  status              RewardStatus @default(PENDING)
+  date                DateTime     @default(now())
+  note                String?
+
+  user              User               @relation(fields: [userId], references: [id])
+  cafeProduct       CafeProduct?       @relation(fields: [cafeProductId], references: [id])
+  restaurantProduct RestaurantProduct? @relation(fields: [restaurantProductId], references: [id])
+}
+
+model Transaction {
+  id                  Int               @id @default(autoincrement())
+  type                String // "earn" or "redeem"
+  currency            Json
+  points              Float
+  date                DateTime          @default(now())
+  userId              Int
+  cafeProductId       Int?
+  restaurantProductId Int?
+  invoiceId           Int?              @unique
+  status              TransactionStatus @default(COMPLETED)
+  synced              Boolean           @default(false)
+
+  cafeProduct       CafeProduct?       @relation(fields: [cafeProductId], references: [id])
+  restaurantProduct RestaurantProduct? @relation(fields: [restaurantProductId], references: [id])
+  user              User               @relation(fields: [userId], references: [id])
+  invoice           Invoice?           @relation(fields: [invoiceId], references: [id])
+}
+
+model Settings {
+  id              Int         @id @default(autoincrement())
+  userId          Int         @unique
+  timezone        String      @default("UTC")
+  enCurrency      String
+  arCurrency      String
+  usdToIqd        Float       @default(1300)
+  pointsPerDollar Float       @default(10)
+  pointsPerIQD    Float       @default(1)
+  printerType     PrinterType @default(USB)
+  printerIp       String?
+  port            Int?        @default(9100)
+  updatedAt       DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Invoice {
+  id         Int      @id @default(autoincrement())
+  userId     Int?
+  phone      String?
+  email      String?
+  totalPrice Float
+  discount   Float?   @default(0)
+  points     Float    @default(0)
+  currency   String   @default("USD")
+  createdAt  DateTime @default(now())
+  synced     Boolean  @default(false)
+
+  user        User?         @relation(fields: [userId], references: [id])
+  items       InvoiceItem[]
+  transaction Transaction? // 0 or 1 transaction
+}
+
+model InvoiceItem {
+  id                  Int   @id @default(autoincrement())
+  invoiceId           Int
+  cafeProductId       Int?
+  restaurantProductId Int?
+  categoryId          Int?
+  quantity            Int   @default(1)
+  price               Float // store product price at purchase time (important!)
+  total               Float // price * quantity
+
+  category          Category?          @relation(fields: [categoryId], references: [id])
+  invoice           Invoice            @relation(fields: [invoiceId], references: [id])
+  cafeProduct       CafeProduct?       @relation(fields: [cafeProductId], references: [id])
+  restaurantProduct RestaurantProduct? @relation(fields: [restaurantProductId], references: [id])
+}
+
+enum Role {
+  ADMIN
+  ACCOUNTANT
+  CASHIER
+  USER
+}
+
+enum RewardStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PrinterType {
+  USB
+  LAN
+}
+
+enum TransactionStatus {
+  COMPLETED
+  CANCELLED
+}
+
+enum CategoryType {
+  CAFE
+  RESTAURANT
+}
