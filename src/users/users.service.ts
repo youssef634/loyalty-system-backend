@@ -1,5 +1,7 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { CloudPrismaService} from '../prisma/prisma.service/cloud-prisma.service';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { CloudPrismaService } from '../prisma/prisma.service/cloud-prisma.service';
+import { LocalPrismaService } from '../prisma/prisma.service/local-prisma.service';
+import { ConnectionService } from '../connection/connection.service';
 import { CreateUserDto, UpdateUserDto } from './dto/users.dto';
 import * as bcrypt from 'bcrypt';
 import * as QRCode from 'qrcode';
@@ -9,7 +11,13 @@ import { DateTime } from 'luxon';
 
 @Injectable()
 export class UsersService {
-    constructor(private prisma: CloudPrismaService) { }
+    private readonly logger = new Logger(UsersService.name);
+
+    constructor(
+        private cloudPrisma: CloudPrismaService,
+        private localPrisma: LocalPrismaService,
+        private connectionService: ConnectionService,
+    ) { }
 
     private getQrUploadPath() {
         const uploadDir = path.join(process.cwd(), 'uploads', 'qrcodes');
@@ -31,15 +39,20 @@ export class UsersService {
     }
 
     async addUser(currentUserId: number, data: CreateUserDto) {
+        const isOnline = this.connectionService.getConnectionStatus();
 
-        const existingUser = await this.prisma.user.findFirst({
+        if (!isOnline) {
+            throw new ForbiddenException('User creation requires internet connection');
+        }
+
+        const existingUser = await this.cloudPrisma.user.findFirst({
             where: { OR: [{ email: data.email }, { phone: data.phone }] },
         });
         if (existingUser) throw new BadRequestException('User with this email or phone already exists');
 
         const hashedPassword = await bcrypt.hash(data.password, 10);
 
-        const newUser = await this.prisma.user.create({
+        const newUser = await this.cloudPrisma.user.create({
             data: {
                 enName: data.enName,
                 arName: data.arName,
@@ -52,9 +65,9 @@ export class UsersService {
             },
         });
 
-        // Generate and store QR code as base64
+        // Generate and store QR code
         const qrCode = await this.generateUserQrPng(newUser.id, newUser.email);
-        return this.prisma.user.update({
+        const updatedUser = await this.cloudPrisma.user.update({
             where: { id: newUser.id },
             data: { qrCode: qrCode },
             select: {
@@ -70,6 +83,30 @@ export class UsersService {
                 createdAt: true
             }
         });
+
+        // Sync to local
+        try {
+            await this.localPrisma.user.create({
+                data: {
+                    id: updatedUser.id,
+                    enName: updatedUser.enName,
+                    arName: updatedUser.arName,
+                    phone: updatedUser.phone,
+                    email: updatedUser.email,
+                    password: hashedPassword,
+                    role: 'USER',
+                    points: updatedUser.points,
+                    profileImage: updatedUser.profileImage,
+                    qrCode: updatedUser.qrCode,
+                    createdAt: updatedUser.createdAt,
+                },
+            });
+            this.logger.log(`User ${updatedUser.id} synced to local database`);
+        } catch (error) {
+            this.logger.warn(`Failed to sync user to local DB: ${error}`);
+        }
+
+        return updatedUser;
     }
 
     async getAllUsers(
@@ -86,10 +123,13 @@ export class UsersService {
             sortOrder?: 'asc' | 'desc';
         },
     ) {
+        const isOnline = this.connectionService.getConnectionStatus();
+        const prisma: any = isOnline ? this.cloudPrisma : this.localPrisma;
+
         // Get timezone from settings
-        let settings = await this.prisma.settings.findUnique({ where: { userId: currentUserId } });
+        let settings = await prisma.settings.findUnique({ where: { userId: currentUserId } });
         if (!settings) {
-            settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+            settings = await prisma.settings.findUnique({ where: { id: 1 } });
             if (!settings) throw new NotFoundException('Admin settings not found');
         }
         const timezone = settings?.timezone || 'UTC';
@@ -104,18 +144,18 @@ export class UsersService {
         if (searchFilters?.phone) filters.phone = { contains: searchFilters.phone, mode: 'insensitive' };
 
         // Sorting logic
-        let orderBy: any = { id: 'asc' }; // default
+        let orderBy: any = { id: 'asc' };
         if (searchFilters?.sortBy) {
             orderBy = {};
             orderBy[searchFilters.sortBy] = searchFilters.sortOrder === 'asc' ? 'asc' : 'desc';
         }
 
-        const totalUsers = await this.prisma.user.count({ where: filters });
+        const totalUsers = await prisma.user.count({ where: filters });
         const totalPages = Math.ceil(totalUsers / limit);
         if (page > totalPages && totalUsers > 0) throw new NotFoundException('Page not found');
 
         const skip = (page - 1) * limit;
-        const users = await this.prisma.user.findMany({
+        const users = await prisma.user.findMany({
             where: filters,
             skip,
             take: limit,
@@ -151,7 +191,13 @@ export class UsersService {
     }
 
     async deleteUser(currentUserId: number, id: number) {
-        const user = await this.prisma.user.findUnique({ where: { id } });
+        const isOnline = this.connectionService.getConnectionStatus();
+
+        if (!isOnline) {
+            throw new ForbiddenException('User deletion requires internet connection');
+        }
+
+        const user = await this.cloudPrisma.user.findUnique({ where: { id } });
         if (!user || user.role !== 'USER') {
             throw new ForbiddenException('Only USER role accounts are allowed here');
         }
@@ -173,23 +219,43 @@ export class UsersService {
         }
 
         // Delete related transactions
-        await this.prisma.transaction.deleteMany({ where: { userId: id } });
+        await this.cloudPrisma.transaction.deleteMany({ where: { userId: id } });
 
         // Delete related rewards
-        await this.prisma.myReward.deleteMany({ where: { userId: id } });
+        await this.cloudPrisma.myReward.deleteMany({ where: { userId: id } });
 
         // Delete related settings
-        await this.prisma.settings.deleteMany({ where: { userId: id } });
+        await this.cloudPrisma.settings.deleteMany({ where: { userId: id } });
 
         // Delete related reset password tokens
-        await this.prisma.resetPasswordToken.deleteMany({ where: { userId: id } });
+        await this.cloudPrisma.resetPasswordToken.deleteMany({ where: { userId: id } });
 
-        // Delete the user record from DB
-        return this.prisma.user.delete({ where: { id } });
+        // Delete the user record from cloud DB
+        const deleted = await this.cloudPrisma.user.delete({ where: { id } });
+
+        // Sync deletion to local
+        try {
+            await this.localPrisma.transaction.deleteMany({ where: { userId: id } });
+            await this.localPrisma.myReward.deleteMany({ where: { userId: id } });
+            await this.localPrisma.settings.deleteMany({ where: { userId: id } });
+            await this.localPrisma.resetPasswordToken.deleteMany({ where: { userId: id } });
+            await this.localPrisma.user.delete({ where: { id } });
+            this.logger.log(`User ${id} deletion synced to local database`);
+        } catch (error) {
+            this.logger.warn(`Failed to sync user deletion to local DB: ${error}`);
+        }
+
+        return deleted;
     }
 
     async updateUser(currentUserId: number, id: number, data: UpdateUserDto) {
-        const user = await this.prisma.user.findUnique({ where: { id } });
+        const isOnline = this.connectionService.getConnectionStatus();
+
+        if (!isOnline) {
+            throw new ForbiddenException('User updates require internet connection');
+        }
+
+        const user = await this.cloudPrisma.user.findUnique({ where: { id } });
         if (!user || user.role !== 'USER') {
             throw new ForbiddenException('Only USER role accounts can be updated');
         }
@@ -214,7 +280,7 @@ export class UsersService {
             updateData.qrCode = await this.generateUserQrPng(id, data.email);
         }
 
-        return this.prisma.user.update({
+        const updated = await this.cloudPrisma.user.update({
             where: { id },
             data: updateData,
             select: {
@@ -230,6 +296,28 @@ export class UsersService {
                 createdAt: true
             }
         });
+
+        // Sync to local
+        try {
+            const localUpdateData: any = {};
+            if (data.enName) localUpdateData.enName = data.enName;
+            if (data.arName) localUpdateData.arName = data.arName;
+            if (data.phone) localUpdateData.phone = data.phone;
+            if (data.email) localUpdateData.email = data.email;
+            if (data.password) localUpdateData.password = updateData.password;
+            if (data.points !== undefined) localUpdateData.points = updateData.points;
+            if (updateData.qrCode) localUpdateData.qrCode = updateData.qrCode;
+
+            await this.localPrisma.user.update({
+                where: { id },
+                data: localUpdateData,
+            });
+            this.logger.log(`User ${id} update synced to local database`);
+        } catch (error) {
+            this.logger.warn(`Failed to sync user update to local DB: ${error}`);
+        }
+
+        return updated;
     }
 
     async addPoints(
@@ -237,20 +325,25 @@ export class UsersService {
         userId: number,
         points: number,
     ) {
+        const isOnline = this.connectionService.getConnectionStatus();
 
-        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!isOnline) {
+            throw new ForbiddenException('Adding points requires internet connection');
+        }
+
+        const user = await this.cloudPrisma.user.findUnique({ where: { id: userId } });
         if (!user || user.role !== 'USER') {
             throw new ForbiddenException('Only USER role accounts are allowed here');
         }
 
         // Fetch settings to get conversion rates
-        const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });;
+        const settings = await this.cloudPrisma.settings.findUnique({ where: { id: 1 } });
         if (!settings) {
             throw new NotFoundException('Settings not found. Please configure settings first.');
         }
 
         // Update user points
-        const updatedUser = await this.prisma.user.update({
+        const updatedUser = await this.cloudPrisma.user.update({
             where: { id: userId },
             data: { points: user.points + points },
             select: {
@@ -268,7 +361,7 @@ export class UsersService {
         });
 
         // Create transaction record
-        await this.prisma.transaction.create({
+        const transaction = await this.cloudPrisma.transaction.create({
             data: {
                 currency: {
                     enCurrency: settings.enCurrency,
@@ -279,6 +372,30 @@ export class UsersService {
                 userId: userId,
             },
         });
+
+        // Sync to local
+        try {
+            await this.localPrisma.user.update({
+                where: { id: userId },
+                data: { points: updatedUser.points },
+            });
+
+            await this.localPrisma.transaction.create({
+                data: {
+                    id: transaction.id,
+                    currency: transaction.currency,
+                    type: transaction.type,
+                    points: transaction.points,
+                    userId: transaction.userId,
+                    cafeProductId: transaction.cafeProductId,
+                    restaurantProductId: transaction.restaurantProductId,
+                    date: transaction.date,
+                },
+            });
+            this.logger.log(`User ${userId} points addition synced to local database`);
+        } catch (error) {
+            this.logger.warn(`Failed to sync points addition to local DB: ${error}`);
+        }
 
         return {
             message: `Added ${points} points to user successfully`,

@@ -1,10 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CloudPrismaService} from '../prisma/prisma.service/cloud-prisma.service';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { CloudPrismaService } from '../prisma/prisma.service/cloud-prisma.service';
+import { LocalPrismaService } from '../prisma/prisma.service/local-prisma.service';
+import { ConnectionService } from '../connection/connection.service';
 import { DateTime } from 'luxon';
 
 @Injectable()
 export class InvoiceService {
-    constructor(private prisma: CloudPrismaService) { }
+    private readonly logger = new Logger(InvoiceService.name);
+
+    constructor(
+        private cloudPrisma: CloudPrismaService,
+        private localPrisma: LocalPrismaService,
+        private connectionService: ConnectionService,
+    ) { }
 
     // 🔹 Get all invoice headers
     async getAllInvoices(
@@ -53,37 +61,36 @@ export class InvoiceService {
         }
 
         // Sorting logic
-        let orderBy: any
+        let orderBy: any;
         if (filters?.sortBy) {
             orderBy = {};
-
-            // Handle special sorting cases for invoices
             if (filters.sortBy === 'user.name') {
                 orderBy = {
                     user: {
-                        enName: filters.sortOrder === 'asc' ? 'asc' : 'desc'
-                    }
+                        enName: filters.sortOrder === 'asc' ? 'asc' : 'desc',
+                    },
                 };
             } else if (['id', 'totalPrice', 'points', 'createdAt', 'userId'].includes(filters.sortBy)) {
-                // Valid direct database fields
                 orderBy[filters.sortBy] = filters.sortOrder === 'asc' ? 'asc' : 'desc';
             } else {
-                // Fallback to createdAt sorting for unsupported fields
                 orderBy = { createdAt: filters.sortOrder === 'asc' ? 'asc' : 'desc' };
             }
         } else {
-            orderBy = { id: 'asc' }; // Default sorting
+            orderBy = { id: 'asc' };
         }
 
         // 🔹 Get system timezone from settings
-        const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });;
+        const isOnline = this.connectionService.getConnectionStatus();
+        const prismaService: any = isOnline ? this.cloudPrisma : this.localPrisma;
+
+        const settings = await prismaService.settings.findUnique({ where: { id: 1 } });
         const timezone = settings?.timezone || 'UTC';
 
-        const totalInvoices = await this.prisma.invoice.count({ where });
+        const totalInvoices = await prismaService.invoice.count({ where });
         const totalPages = Math.ceil(totalInvoices / take);
 
-        const [data, total] = await this.prisma.$transaction([
-            this.prisma.invoice.findMany({
+        const [data, total] = await prismaService.$transaction([
+            prismaService.invoice.findMany({
                 where,
                 skip,
                 take,
@@ -108,7 +115,7 @@ export class InvoiceService {
                     },
                 },
             }),
-            this.prisma.invoice.count({ where }),
+            prismaService.invoice.count({ where }),
         ]);
 
         // 🔹 Format createdAt
@@ -129,7 +136,10 @@ export class InvoiceService {
 
     // 🔹 Get single invoice with items
     async getInvoiceById(id: number) {
-        const invoice = await this.prisma.invoice.findUnique({
+        const isOnline = this.connectionService.getConnectionStatus();
+        const prismaService: any = isOnline ? this.cloudPrisma : this.localPrisma;
+
+        const invoice = await prismaService.invoice.findUnique({
             where: { id },
             include: {
                 items: {
@@ -156,7 +166,7 @@ export class InvoiceService {
         }
 
         // 🔹 Get timezone
-        const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });;
+        const settings = await prismaService.settings.findUnique({ where: { id: 1 } });
         const timezone = settings?.timezone || 'UTC';
 
         return {
@@ -168,46 +178,64 @@ export class InvoiceService {
     }
 
     async deleteInvoice(id: number) {
+        const isOnline = this.connectionService.getConnectionStatus();
+
+        if (!isOnline) {
+            throw new ForbiddenException('Invoice deletion requires internet connection');
+        }
+
         // Find the invoice and include its transaction
-        const invoice = await this.prisma.invoice.findUnique({
+        const invoice = await this.cloudPrisma.invoice.findUnique({
             where: { id },
-            include: { transaction: true }
+            include: { transaction: true },
         });
         if (!invoice) throw new NotFoundException(`Invoice with id ${id} not found`);
 
         // If there is a transaction, cancel it using the same logic as cancelTransaction
         if (invoice.transaction) {
             const transaction = invoice.transaction;
-            const user = await this.prisma.user.findUnique({ where: { id: transaction.userId } });
+            const user = await this.cloudPrisma.user.findUnique({ where: { id: transaction.userId } });
             if (user) {
                 // Revert points based on type
                 const userPointsUpdate = transaction.type === 'earn'
                     ? { points: user.points - transaction.points }
                     : { points: user.points + transaction.points };
 
-                await this.prisma.user.update({
+                await this.cloudPrisma.user.update({
                     where: { id: transaction.userId },
-                    data: userPointsUpdate
+                    data: userPointsUpdate,
                 });
             }
 
             // Mark transaction as cancelled
-            await this.prisma.transaction.update({
+            await this.cloudPrisma.transaction.update({
                 where: { id: transaction.id },
-                data: { status: 'CANCELLED' }
+                data: { status: 'CANCELLED' },
             });
 
             // Delete the transaction
-            await this.prisma.transaction.delete({
-                where: { id: transaction.id }
+            await this.cloudPrisma.transaction.delete({
+                where: { id: transaction.id },
             });
         }
 
         // Delete related invoice items
-        await this.prisma.invoiceItem.deleteMany({ where: { invoiceId: id } });
+        await this.cloudPrisma.invoiceItem.deleteMany({ where: { invoiceId: id } });
 
         // Delete the invoice itself
-        await this.prisma.invoice.delete({ where: { id } });
+        await this.cloudPrisma.invoice.delete({ where: { id } });
+
+        // Sync deletion to local
+        try {
+            await this.localPrisma.invoiceItem.deleteMany({ where: { invoiceId: id } });
+            await this.localPrisma.invoice.delete({ where: { id } });
+            if (invoice.transaction) {
+                await this.localPrisma.transaction.delete({ where: { id: invoice.transaction.id } });
+            }
+            this.logger.log(`Invoice ${id} and its transaction deletion synced to local database`);
+        } catch (error) {
+            this.logger.warn(`Failed to sync invoice deletion to local DB: ${error}`);
+        }
 
         return { message: `Invoice ${id} and its transaction deleted successfully` };
     }
