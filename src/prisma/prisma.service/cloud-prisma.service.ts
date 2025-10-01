@@ -5,11 +5,11 @@ import { ConfigService } from '@nestjs/config';
 @Global()
 @Injectable()
 export class CloudPrismaService extends CloudPrismaClient {
-  constructor(configService: ConfigService) {
+  constructor(private configService: ConfigService) {
     super({
       datasources: {
         db: {
-          url: configService.get<string>('DATABASE_URL'), // Supabase
+          url: configService.get<string>('DATABASE_URL'), // Supabase URL
         },
       },
     });

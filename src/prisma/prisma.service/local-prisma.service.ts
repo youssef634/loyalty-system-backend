@@ -5,11 +5,11 @@ import { ConfigService } from '@nestjs/config';
 @Global()
 @Injectable()
 export class LocalPrismaService extends LocalPrismaClient {
-  constructor(configService: ConfigService) {
+  constructor(private configService: ConfigService) {
     super({
       datasources: {
         db: {
-          url: configService.get<string>('LOCAL_DATABASE_URL'),
+          url: configService.get<string>('LOCAL_DATABASE_URL'), // Local DB
         },
       },
     });

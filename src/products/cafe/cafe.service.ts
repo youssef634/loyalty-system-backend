@@ -3,8 +3,11 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { CloudPrismaService } from '../../prisma/prisma.service/cloud-prisma.service';
+import { LocalPrismaService } from '../../prisma/prisma.service/local-prisma.service';
+import { ConnectionService } from '../../connection/connection.service';
 import { CreateCafeProductDto, UpdateCafeProductDto } from './dto/cafe.dto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -12,7 +15,13 @@ import axios from 'axios';
 
 @Injectable()
 export class CafeProductsService {
-  constructor(private prisma: CloudPrismaService) { }
+  private readonly logger = new Logger(CafeProductsService.name);
+
+  constructor(
+    private cloudPrisma: CloudPrismaService,
+    private localPrisma: LocalPrismaService,
+    private connectionService: ConnectionService,
+  ) { }
 
   async getProducts(
     page: number = 1,
@@ -26,9 +35,17 @@ export class CafeProductsService {
       category?: string;
     },
   ) {
+    const isOnline = this.connectionService.getConnectionStatus();
 
+    if (isOnline) {
+      return await this.getProductsCloud(page, filters);
+    } else {
+      return await this.getProductsLocal(page, filters);
+    }
+  }
+
+  private async getProductsCloud(page: number, filters?: any) {
     const limit = filters?.limit && filters.limit > 0 ? filters.limit : 10;
-
     const where: any = {};
 
     if (filters?.id) where.id = filters.id;
@@ -53,7 +70,7 @@ export class CafeProductsService {
         where.points.lte = Number(filters.maxPoints);
     }
 
-    const total = await this.prisma.cafeProduct.count({ where });
+    const total = await this.cloudPrisma.cafeProduct.count({ where });
     const totalPages = Math.ceil(total / limit);
     if (page > totalPages && total > 0) {
       throw new NotFoundException('Page not found');
@@ -61,7 +78,56 @@ export class CafeProductsService {
 
     const skip = (page - 1) * limit;
 
-    const products = await this.prisma.cafeProduct.findMany({
+    const products = await this.cloudPrisma.cafeProduct.findMany({
+      where,
+      skip,
+      take: limit,
+      include: { category: true }
+    });
+
+    return {
+      total,
+      totalPages,
+      currentPage: page,
+      products,
+    };
+  }
+
+  private async getProductsLocal(page: number, filters?: any) {
+    const limit = filters?.limit && filters.limit > 0 ? filters.limit : 10;
+    const where: any = {};
+
+    if (filters?.id) where.id = filters.id;
+    if (filters?.enName)
+      where.enName = { contains: filters.enName, mode: 'insensitive' };
+    if (filters?.arName)
+      where.arName = { contains: filters.arName, mode: 'insensitive' };
+    if (filters?.category) {
+      where.category = {
+        OR: [
+          { enName: { contains: filters.category, mode: 'insensitive' } },
+          { arName: { contains: filters.category, mode: 'insensitive' } },
+        ],
+      };
+    }
+
+    if (filters?.minPoints !== undefined || filters?.maxPoints !== undefined) {
+      where.points = {};
+      if (filters.minPoints !== undefined)
+        where.points.gte = Number(filters.minPoints);
+      if (filters.maxPoints !== undefined)
+        where.points.lte = Number(filters.maxPoints);
+    }
+
+    const total = await this.localPrisma.cafeProduct.count({ where });
+    const totalPages = Math.ceil(total / limit);
+    if (page > totalPages && total > 0) {
+      throw new NotFoundException('Page not found');
+    }
+
+    const skip = (page - 1) * limit;
+
+    const products = await this.localPrisma.cafeProduct.findMany({
       where,
       skip,
       take: limit,
@@ -81,20 +147,23 @@ export class CafeProductsService {
     data: CreateCafeProductDto & { currency?: string },
     file?: Express.Multer.File,
   ) {
+    const isOnline = this.connectionService.getConnectionStatus();
+
+    if (!isOnline) {
+      throw new ForbiddenException('Product creation requires internet connection');
+    }
+
     const uploadDir = this.getCafeProductsUploadPath();
     let imageUrl: string | undefined;
 
-    // ✅ Fetch settings for conversion
-    const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+    const settings = await this.cloudPrisma.settings.findUnique({ where: { id: 1 } });
     const usdToIqd = settings?.usdToIqd || 1300;
 
-    // ✅ Currency conversion
     let finalPrice = data.price;
     if (data.currency === 'IQD') {
-      finalPrice = data.price / usdToIqd; // Convert IQD → USD
+      finalPrice = data.price / usdToIqd;
     }
 
-    // Handle file upload, base64, external URL, local URL (same as before)
     if (file) {
       const fileName = `${Date.now()}_${file.originalname}`;
       const filePath = path.join(uploadDir, fileName);
@@ -126,13 +195,34 @@ export class CafeProductsService {
       imageUrl = data.image;
     }
 
-    return this.prisma.cafeProduct.create({
+    const product = await this.cloudPrisma.cafeProduct.create({
       data: {
         ...data,
-        price: finalPrice, // ✅ Save as USD
+        price: finalPrice,
         image: imageUrl,
       },
     });
+
+    // Sync to local
+    try {
+      await this.localPrisma.cafeProduct.create({
+        data: {
+          id: product.id,
+          enName: product.enName,
+          arName: product.arName,
+          image: product.image,
+          price: product.price,
+          points: product.points,
+          type: product.type,
+          categoryId: product.categoryId,
+        },
+      });
+      this.logger.log(`Product ${product.id} synced to local database`);
+    } catch (error) {
+      this.logger.warn(`Failed to sync product to local DB: ${error}`);
+    }
+
+    return product;
   }
 
   async updateProduct(
@@ -141,23 +231,26 @@ export class CafeProductsService {
     data: UpdateCafeProductDto & { currency?: string },
     file?: Express.Multer.File,
   ) {
-    const product = await this.prisma.cafeProduct.findUnique({ where: { id } });
+    const isOnline = this.connectionService.getConnectionStatus();
+
+    if (!isOnline) {
+      throw new ForbiddenException('Product updates require internet connection');
+    }
+
+    const product = await this.cloudPrisma.cafeProduct.findUnique({ where: { id } });
     if (!product) throw new NotFoundException('Product not found');
 
     let imageUrl = product.image;
     const uploadDir = this.getCafeProductsUploadPath();
 
-    // ✅ Fetch settings for conversion
-    const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+    const settings = await this.cloudPrisma.settings.findUnique({ where: { id: 1 } });
     const usdToIqd = settings?.usdToIqd || 1300;
 
-    // ✅ Currency conversion
     let finalPrice = data.price ?? product.price;
     if (data.price && data.currency === 'IQD') {
-      finalPrice = data.price / usdToIqd; // Convert IQD → USD
+      finalPrice = data.price / usdToIqd;
     }
 
-    // Handle file upload, base64, external URL, local URL (same as before)
     if (file) {
       if (imageUrl) {
         const oldPath = path.join(uploadDir, path.basename(imageUrl));
@@ -207,22 +300,47 @@ export class CafeProductsService {
       imageUrl = data.image;
     }
 
-    return this.prisma.cafeProduct.update({
+    const updatedProduct = await this.cloudPrisma.cafeProduct.update({
       where: { id },
       data: {
         ...data,
-        price: finalPrice, // ✅ Always stored as USD
+        price: finalPrice,
         image: imageUrl,
       },
     });
+
+    // Sync to local
+    try {
+      await this.localPrisma.cafeProduct.update({
+        where: { id },
+        data: {
+          enName: updatedProduct.enName,
+          arName: updatedProduct.arName,
+          image: updatedProduct.image,
+          price: updatedProduct.price,
+          points: updatedProduct.points,
+          type: updatedProduct.type,
+          categoryId: updatedProduct.categoryId,
+        },
+      });
+      this.logger.log(`Product ${id} update synced to local database`);
+    } catch (error) {
+      this.logger.warn(`Failed to sync product update to local DB: ${error}`);
+    }
+
+    return updatedProduct;
   }
 
   async deleteProduct(currentUserId: number, id: number) {
+    const isOnline = this.connectionService.getConnectionStatus();
 
-    const product = await this.prisma.cafeProduct.findUnique({ where: { id } });
+    if (!isOnline) {
+      throw new ForbiddenException('Product deletion requires internet connection');
+    }
+
+    const product = await this.cloudPrisma.cafeProduct.findUnique({ where: { id } });
     if (!product) throw new NotFoundException('Product not found');
 
-    // Delete image file if exists and is a local file
     if (product.image && product.image.startsWith('http://localhost:3000/uploads/cafe-products/')) {
       const fileName = path.basename(product.image);
       const filePath = path.join(this.getCafeProductsUploadPath(), fileName);
@@ -230,7 +348,18 @@ export class CafeProductsService {
         fs.unlinkSync(filePath);
       }
     }
-    return this.prisma.cafeProduct.delete({ where: { id } });
+
+    await this.cloudPrisma.cafeProduct.delete({ where: { id } });
+
+    // Sync deletion to local
+    try {
+      await this.localPrisma.cafeProduct.delete({ where: { id } });
+      this.logger.log(`Product ${id} deletion synced to local database`);
+    } catch (error) {
+      this.logger.warn(`Failed to sync product deletion to local DB: ${error}`);
+    }
+
+    return product;
   }
 
   private getCafeProductsUploadPath() {

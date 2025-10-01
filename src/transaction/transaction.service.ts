@@ -1,19 +1,29 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { CloudPrismaService} from '../prisma/prisma.service/cloud-prisma.service';
+import { ForbiddenException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { CloudPrismaService } from '../prisma/prisma.service/cloud-prisma.service';
+import { LocalPrismaService } from '../prisma/prisma.service/local-prisma.service';
+import { ConnectionService } from '../connection/connection.service';
 import { DateTime } from 'luxon';
 import { TransactionStatus } from '@prisma/client';
 
 @Injectable()
 export class TransactionService {
-    constructor(private prisma: CloudPrismaService) { }
+    private readonly logger = new Logger(TransactionService.name);
+
+    constructor(
+        private cloudPrisma: CloudPrismaService,
+        private localPrisma: LocalPrismaService,
+        private connectionService: ConnectionService,
+    ) { }
 
     async getAllTransactions() {
-        return this.prisma.transaction.findMany({
+        const isOnline = this.connectionService.getConnectionStatus();
+        const prismaService : any = isOnline ? this.cloudPrisma : this.localPrisma;
+
+        return prismaService.transaction.findMany({
             orderBy: { id: 'asc' },
             include: {
                 user: { select: { id: true, enName: true, arName: true, email: true } },
-
-            }
+            },
         });
     }
 
@@ -35,16 +45,19 @@ export class TransactionService {
             status?: TransactionStatus;
             sortBy?: string;
             sortOrder?: 'asc' | 'desc';
-        }
+        },
     ) {
-        const user = await this.prisma.user.findUnique({ where: { id: currentUserId } });
+        const isOnline = this.connectionService.getConnectionStatus();
+        const prismaService : any = isOnline ? this.cloudPrisma : this.localPrisma;
+
+        const user = await prismaService.user.findUnique({ where: { id: currentUserId } });
         if (!user) throw new ForbiddenException('User not found');
 
         const isUser = user.role === 'USER';
 
-        let settings = await this.prisma.settings.findUnique({ where: { userId: currentUserId } });
+        let settings = await prismaService.settings.findUnique({ where: { userId: currentUserId } });
         if (!settings) {
-            settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+            settings = await prismaService.settings.findUnique({ where: { id: 1 } });
             if (!settings) throw new NotFoundException('Admin settings not found');
         }
         const timezone = settings?.timezone || 'UTC';
@@ -75,7 +88,7 @@ export class TransactionService {
 
         if (searchFilters?.email) {
             filters.user = {
-                email: { contains: searchFilters.email, mode: 'insensitive' }
+                email: { contains: searchFilters.email, mode: 'insensitive' },
             };
         }
 
@@ -85,15 +98,14 @@ export class TransactionService {
             filters.status = searchFilters.status.toUpperCase();
         }
 
-        let orderBy: any
+        let orderBy: any;
         if (searchFilters?.sortBy) {
             orderBy = {};
-
             if (searchFilters.sortBy === 'user.name') {
                 orderBy = {
                     user: {
-                         enName: searchFilters.sortOrder === 'asc' ? 'asc' : 'desc'
-                    }
+                        enName: searchFilters.sortOrder === 'asc' ? 'asc' : 'desc',
+                    },
                 };
             } else if (searchFilters.sortBy === 'currency.arCurrency' || searchFilters.sortBy === 'currency.enCurrency') {
                 orderBy = { date: searchFilters.sortOrder === 'asc' ? 'asc' : 'desc' };
@@ -110,13 +122,13 @@ export class TransactionService {
             filters.userId = currentUserId;
         }
 
-        const total = await this.prisma.transaction.count({ where: filters });
+        const total = await prismaService.transaction.count({ where: filters });
         const totalPages = Math.ceil(total / limit);
         if (page > totalPages && total > 0) throw new NotFoundException('Page not found');
 
         const skip = (page - 1) * limit;
 
-        const transactions = await this.prisma.transaction.findMany({
+        const transactions = await prismaService.transaction.findMany({
             where: filters,
             skip,
             take: limit,
@@ -131,7 +143,7 @@ export class TransactionService {
             formattedDate: DateTime
                 .fromJSDate(tx.date, { zone: 'utc' })
                 .setZone(timezone)
-                .toFormat('MMM dd, yyyy, hh:mm a')
+                .toFormat('MMM dd, yyyy, hh:mm a'),
         }));
 
         return {
@@ -143,17 +155,38 @@ export class TransactionService {
     }
 
     async deleteTransaction(currentUserId: number, transactionId: number) {
+        const isOnline = this.connectionService.getConnectionStatus();
 
-        const transaction = await this.prisma.transaction.findUnique({ where: { id: transactionId } });
+        if (!isOnline) {
+            throw new ForbiddenException('Transaction deletion requires internet connection');
+        }
+
+        const transaction = await this.cloudPrisma.transaction.findUnique({ where: { id: transactionId } });
         if (!transaction) throw new NotFoundException('Transaction not found');
 
-        return this.prisma.transaction.delete({ where: { id: transactionId } });
+        const deleted = await this.cloudPrisma.transaction.delete({ where: { id: transactionId } });
+
+        // Sync deletion to local
+        try {
+            await this.localPrisma.transaction.delete({ where: { id: transactionId } });
+            this.logger.log(`Transaction ${transactionId} deletion synced to local database`);
+        } catch (error) {
+            this.logger.warn(`Failed to sync transaction deletion to local DB: ${error}`);
+        }
+
+        return deleted;
     }
 
     async cancelTransaction(adminUserId: number, transactionId: number) {
-        const transaction = await this.prisma.transaction.findUnique({
+        const isOnline = this.connectionService.getConnectionStatus();
+
+        if (!isOnline) {
+            throw new ForbiddenException('Transaction cancellation requires internet connection');
+        }
+
+        const transaction = await this.cloudPrisma.transaction.findUnique({
             where: { id: transactionId },
-            include: { user: true }
+            include: { user: true },
         });
 
         if (!transaction) throw new NotFoundException('Transaction not found');
@@ -163,28 +196,57 @@ export class TransactionService {
             ? { points: transaction.user.points - transaction.points }
             : { points: transaction.user.points + transaction.points };
 
-        await this.prisma.user.update({
+        await this.cloudPrisma.user.update({
             where: { id: transaction.userId },
-            data: userPointsUpdate
+            data: userPointsUpdate,
         });
 
-        const cancelledTransaction = await this.prisma.transaction.update({
+        const cancelledTransaction = await this.cloudPrisma.transaction.update({
             where: { id: transactionId },
-            data: { status: 'CANCELLED' }
+            data: { status: 'CANCELLED' },
         });
+
+        // Sync cancellation to local
+        try {
+            await this.localPrisma.user.update({
+                where: { id: transaction.userId },
+                data: userPointsUpdate,
+            });
+            await this.localPrisma.transaction.update({
+                where: { id: transactionId },
+                data: { status: 'CANCELLED' },
+            });
+            this.logger.log(`Transaction ${transactionId} cancellation synced to local database`);
+        } catch (error) {
+            this.logger.warn(`Failed to sync transaction cancellation to local DB: ${error}`);
+        }
 
         return cancelledTransaction;
     }
 
     async deleteTransactions(currentUserId: number, transactionIds: number[]) {
+        const isOnline = this.connectionService.getConnectionStatus();
+
+        if (!isOnline) {
+            throw new ForbiddenException('Transaction deletion requires internet connection');
+        }
+
         const results = [];
         for (const id of transactionIds) {
             // Cancel first
             await this.cancelTransaction(currentUserId, id);
             // Then delete
-            await this.prisma.transaction.delete({ where: { id } });
+            const deleted = await this.cloudPrisma.transaction.delete({ where: { id } });
+            // Sync deletion to local
+            try {
+                await this.localPrisma.transaction.delete({ where: { id } });
+                this.logger.log(`Transaction ${id} deletion synced to local database`);
+            } catch (error) {
+                this.logger.warn(`Failed to sync transaction deletion to local DB: ${error}`);
+            }
             results.push({ id, status: 'deleted' });
         }
+
         return { message: 'Transactions cancelled and deleted', results };
     }
 }

@@ -3,8 +3,11 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { CloudPrismaService } from '../../prisma/prisma.service/cloud-prisma.service';
+import { LocalPrismaService } from '../../prisma/prisma.service/local-prisma.service';
+import { ConnectionService } from '../../connection/connection.service';
 import { CreateRestaurantProductDto, UpdateRestaurantProductDto } from './dto/restaurant.dto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -12,7 +15,13 @@ import axios from 'axios';
 
 @Injectable()
 export class RestaurantProductsService {
-  constructor(private prisma: CloudPrismaService) { }
+  private readonly logger = new Logger(RestaurantProductsService.name);
+
+  constructor(
+    private cloudPrisma: CloudPrismaService,
+    private localPrisma: LocalPrismaService,
+    private connectionService: ConnectionService,
+  ) {}
 
   async getProducts(
     page: number = 1,
@@ -26,6 +35,16 @@ export class RestaurantProductsService {
       category?: string;
     },
   ) {
+    const isOnline = this.connectionService.getConnectionStatus();
+
+    if (isOnline) {
+      return await this.getProductsCloud(page, filters);
+    } else {
+      return await this.getProductsLocal(page, filters);
+    }
+  }
+
+  private async getProductsCloud(page: number, filters?: any) {
     const limit = filters?.limit && filters.limit > 0 ? filters.limit : 10;
     const where: any = {};
 
@@ -50,7 +69,7 @@ export class RestaurantProductsService {
         where.points.lte = Number(filters.maxPoints);
     }
 
-    const total = await this.prisma.restaurantProduct.count({ where });
+    const total = await this.cloudPrisma.restaurantProduct.count({ where });
     const totalPages = Math.ceil(total / limit);
     if (page > totalPages && total > 0) {
       throw new NotFoundException('Page not found');
@@ -58,11 +77,59 @@ export class RestaurantProductsService {
 
     const skip = (page - 1) * limit;
 
-    const products = await this.prisma.restaurantProduct.findMany({
+    const products = await this.cloudPrisma.restaurantProduct.findMany({
       where,
       skip,
       take: limit,
-      include: { category: true }
+      include: { category: true },
+    });
+
+    return {
+      total,
+      totalPages,
+      currentPage: page,
+      products,
+    };
+  }
+
+  private async getProductsLocal(page: number, filters?: any) {
+    const limit = filters?.limit && filters.limit > 0 ? filters.limit : 10;
+    const where: any = {};
+
+    if (filters?.id) where.id = filters.id;
+    if (filters?.enName)
+      where.enName = { contains: filters.enName, mode: 'insensitive' };
+    if (filters?.arName)
+      where.arName = { contains: filters.arName, mode: 'insensitive' };
+    if (filters?.category) {
+      where.category = {
+        OR: [
+          { enName: { contains: filters.category, mode: 'insensitive' } },
+          { arName: { contains: filters.category, mode: 'insensitive' } },
+        ],
+      };
+    }
+    if (filters?.minPoints !== undefined || filters?.maxPoints !== undefined) {
+      where.points = {};
+      if (filters.minPoints !== undefined)
+        where.points.gte = Number(filters.minPoints);
+      if (filters.maxPoints !== undefined)
+        where.points.lte = Number(filters.maxPoints);
+    }
+
+    const total = await this.localPrisma.restaurantProduct.count({ where });
+    const totalPages = Math.ceil(total / limit);
+    if (page > totalPages && total > 0) {
+      throw new NotFoundException('Page not found');
+    }
+
+    const skip = (page - 1) * limit;
+
+    const products = await this.localPrisma.restaurantProduct.findMany({
+      where,
+      skip,
+      take: limit,
+      include: { category: true },
     });
 
     return {
@@ -75,17 +142,30 @@ export class RestaurantProductsService {
 
   async addProduct(
     currentUserId: number,
-    data: CreateRestaurantProductDto,
+    data: CreateRestaurantProductDto & { currency?: string },
     file?: Express.Multer.File,
   ) {
-    const uploadDir = path.join(process.cwd(), 'uploads', 'restaurant-products');
+    const isOnline = this.connectionService.getConnectionStatus();
+
+    if (!isOnline) {
+      throw new ForbiddenException('Product creation requires internet connection');
+    }
+
+    const uploadDir = this.getRestaurantProductsUploadPath();
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
     let imageUrl: string | undefined;
 
-    // ✅ Handle file upload / base64 / external / local
+    const settings = await this.cloudPrisma.settings.findUnique({ where: { id: 1 } });
+    const usdToIqd = settings?.usdToIqd || 1300;
+
+    let finalPrice = data.price;
+    if (data.currency === 'IQD') {
+      finalPrice = data.price / usdToIqd;
+    }
+
     if (file) {
       const fileName = `${Date.now()}_${file.originalname}`;
       const filePath = path.join(uploadDir, fileName);
@@ -117,40 +197,64 @@ export class RestaurantProductsService {
       imageUrl = data.image;
     }
 
-    // ✅ Handle currency conversion
-    const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
-
-    let finalPrice = data.price;
-    if (settings?.enCurrency === 'IQD') {
-      // Convert IQD → USD before storing
-      finalPrice = data.price / settings.usdToIqd;
-    }
-
-    return this.prisma.restaurantProduct.create({
+    const product = await this.cloudPrisma.restaurantProduct.create({
       data: {
         ...data,
-        price: finalPrice, // always stored in USD
+        price: finalPrice,
         image: imageUrl,
       },
     });
+
+    try {
+      await this.localPrisma.restaurantProduct.create({
+        data: {
+          id: product.id,
+          enName: product.enName,
+          arName: product.arName,
+          image: product.image,
+          price: product.price,
+          points: product.points,
+          type: product.type,
+          categoryId: product.categoryId,
+        },
+      });
+      this.logger.log(`Product ${product.id} synced to local database`);
+    } catch (error) {
+      this.logger.warn(`Failed to sync product to local DB: ${error}`);
+    }
+
+    return product;
   }
 
   async updateProduct(
     currentUserId: number,
     id: number,
-    data: UpdateRestaurantProductDto,
+    data: UpdateRestaurantProductDto & { currency?: string },
     file?: Express.Multer.File,
   ) {
-    const product = await this.prisma.restaurantProduct.findUnique({ where: { id } });
+    const isOnline = this.connectionService.getConnectionStatus();
+
+    if (!isOnline) {
+      throw new ForbiddenException('Product updates require internet connection');
+    }
+
+    const product = await this.cloudPrisma.restaurantProduct.findUnique({ where: { id } });
     if (!product) throw new NotFoundException('Product not found');
 
     let imageUrl = product.image;
-    const uploadDir = path.join(process.cwd(), 'uploads', 'restaurant-products');
+    const uploadDir = this.getRestaurantProductsUploadPath();
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    // ✅ Replace image if new one provided
+    const settings = await this.cloudPrisma.settings.findUnique({ where: { id: 1 } });
+    const usdToIqd = settings?.usdToIqd || 1300;
+
+    let finalPrice = data.price ?? product.price;
+    if (data.price !== undefined && data.currency === 'IQD') {
+      finalPrice = data.price / usdToIqd;
+    }
+
     if (file) {
       if (imageUrl && imageUrl.startsWith('http://localhost:3000/uploads/restaurant-products/')) {
         const oldPath = path.join(uploadDir, path.basename(imageUrl));
@@ -194,15 +298,7 @@ export class RestaurantProductsService {
       imageUrl = data.image;
     }
 
-    // ✅ Handle currency conversion
-    const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
-
-    let finalPrice = data.price ?? product.price;
-    if (data.price !== undefined && settings?.enCurrency === 'IQD') {
-      finalPrice = data.price / settings.usdToIqd; // Convert IQD → USD
-    }
-
-    return this.prisma.restaurantProduct.update({
+    const updatedProduct = await this.cloudPrisma.restaurantProduct.update({
       where: { id },
       data: {
         ...data,
@@ -210,21 +306,59 @@ export class RestaurantProductsService {
         image: imageUrl,
       },
     });
+
+    try {
+      await this.localPrisma.restaurantProduct.update({
+        where: { id },
+        data: {
+          enName: updatedProduct.enName,
+          arName: updatedProduct.arName,
+          image: updatedProduct.image,
+          price: updatedProduct.price,
+          points: updatedProduct.points,
+          type: updatedProduct.type,
+          categoryId: updatedProduct.categoryId,
+        },
+      });
+      this.logger.log(`Product ${id} update synced to local database`);
+    } catch (error) {
+      this.logger.warn(`Failed to sync product update to local DB: ${error}`);
+    }
+
+    return updatedProduct;
   }
 
   async deleteProduct(currentUserId: number, id: number) {
-    const product = await this.prisma.restaurantProduct.findUnique({ where: { id } });
+    const isOnline = this.connectionService.getConnectionStatus();
+
+    if (!isOnline) {
+      throw new ForbiddenException('Product deletion requires internet connection');
+    }
+
+    const product = await this.cloudPrisma.restaurantProduct.findUnique({ where: { id } });
     if (!product) throw new NotFoundException('Product not found');
 
-    // Delete image file if exists and is a local file
     if (product.image && product.image.startsWith('http://localhost:3000/uploads/restaurant-products/')) {
       const fileName = path.basename(product.image);
-      const filePath = path.join(process.cwd(), 'uploads', 'restaurant-products', fileName);
+      const filePath = path.join(this.getRestaurantProductsUploadPath(), fileName);
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
     }
 
-    return this.prisma.restaurantProduct.delete({ where: { id } });
+    await this.cloudPrisma.restaurantProduct.delete({ where: { id } });
+
+    try {
+      await this.localPrisma.restaurantProduct.delete({ where: { id } });
+      this.logger.log(`Product ${id} deletion synced to local database`);
+    } catch (error) {
+      this.logger.warn(`Failed to sync product deletion to local DB: ${error}`);
+    }
+
+    return product;
+  }
+
+  private getRestaurantProductsUploadPath() {
+    return path.join(process.cwd(), 'uploads', 'restaurant-products');
   }
 }

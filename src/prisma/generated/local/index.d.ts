@@ -10296,6 +10296,7 @@ export namespace Prisma {
     status: $Enums.RewardStatus | null
     date: Date | null
     note: string | null
+    synced: boolean | null
   }
 
   export type MyRewardMaxAggregateOutputType = {
@@ -10308,6 +10309,7 @@ export namespace Prisma {
     status: $Enums.RewardStatus | null
     date: Date | null
     note: string | null
+    synced: boolean | null
   }
 
   export type MyRewardCountAggregateOutputType = {
@@ -10320,6 +10322,7 @@ export namespace Prisma {
     status: number
     date: number
     note: number
+    synced: number
     _all: number
   }
 
@@ -10350,6 +10353,7 @@ export namespace Prisma {
     status?: true
     date?: true
     note?: true
+    synced?: true
   }
 
   export type MyRewardMaxAggregateInputType = {
@@ -10362,6 +10366,7 @@ export namespace Prisma {
     status?: true
     date?: true
     note?: true
+    synced?: true
   }
 
   export type MyRewardCountAggregateInputType = {
@@ -10374,6 +10379,7 @@ export namespace Prisma {
     status?: true
     date?: true
     note?: true
+    synced?: true
     _all?: true
   }
 
@@ -10473,6 +10479,7 @@ export namespace Prisma {
     status: $Enums.RewardStatus
     date: Date
     note: string | null
+    synced: boolean
     _count: MyRewardCountAggregateOutputType | null
     _avg: MyRewardAvgAggregateOutputType | null
     _sum: MyRewardSumAggregateOutputType | null
@@ -10504,6 +10511,7 @@ export namespace Prisma {
     status?: boolean
     date?: boolean
     note?: boolean
+    synced?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     cafeProduct?: boolean | MyReward$cafeProductArgs<ExtArgs>
     restaurantProduct?: boolean | MyReward$restaurantProductArgs<ExtArgs>
@@ -10519,6 +10527,7 @@ export namespace Prisma {
     status?: boolean
     date?: boolean
     note?: boolean
+    synced?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     cafeProduct?: boolean | MyReward$cafeProductArgs<ExtArgs>
     restaurantProduct?: boolean | MyReward$restaurantProductArgs<ExtArgs>
@@ -10534,6 +10543,7 @@ export namespace Prisma {
     status?: boolean
     date?: boolean
     note?: boolean
+    synced?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     cafeProduct?: boolean | MyReward$cafeProductArgs<ExtArgs>
     restaurantProduct?: boolean | MyReward$restaurantProductArgs<ExtArgs>
@@ -10549,9 +10559,10 @@ export namespace Prisma {
     status?: boolean
     date?: boolean
     note?: boolean
+    synced?: boolean
   }
 
-  export type MyRewardOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "cafeProductId" | "restaurantProductId" | "points" | "type" | "status" | "date" | "note", ExtArgs["result"]["myReward"]>
+  export type MyRewardOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "cafeProductId" | "restaurantProductId" | "points" | "type" | "status" | "date" | "note" | "synced", ExtArgs["result"]["myReward"]>
   export type MyRewardInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     cafeProduct?: boolean | MyReward$cafeProductArgs<ExtArgs>
@@ -10585,6 +10596,7 @@ export namespace Prisma {
       status: $Enums.RewardStatus
       date: Date
       note: string | null
+      synced: boolean
     }, ExtArgs["result"]["myReward"]>
     composites: {}
   }
@@ -11020,6 +11032,7 @@ export namespace Prisma {
     readonly status: FieldRef<"MyReward", 'RewardStatus'>
     readonly date: FieldRef<"MyReward", 'DateTime'>
     readonly note: FieldRef<"MyReward", 'String'>
+    readonly synced: FieldRef<"MyReward", 'Boolean'>
   }
     
 
@@ -12772,6 +12785,11 @@ export namespace Prisma {
   export type SettingsMinAggregateOutputType = {
     id: number | null
     userId: number | null
+    enTitle: string | null
+    arTitle: string | null
+    enDescription: string | null
+    arDescription: string | null
+    imgUrl: string | null
     timezone: string | null
     enCurrency: string | null
     arCurrency: string | null
@@ -12787,6 +12805,11 @@ export namespace Prisma {
   export type SettingsMaxAggregateOutputType = {
     id: number | null
     userId: number | null
+    enTitle: string | null
+    arTitle: string | null
+    enDescription: string | null
+    arDescription: string | null
+    imgUrl: string | null
     timezone: string | null
     enCurrency: string | null
     arCurrency: string | null
@@ -12802,6 +12825,11 @@ export namespace Prisma {
   export type SettingsCountAggregateOutputType = {
     id: number
     userId: number
+    enTitle: number
+    arTitle: number
+    enDescription: number
+    arDescription: number
+    imgUrl: number
     timezone: number
     enCurrency: number
     arCurrency: number
@@ -12837,6 +12865,11 @@ export namespace Prisma {
   export type SettingsMinAggregateInputType = {
     id?: true
     userId?: true
+    enTitle?: true
+    arTitle?: true
+    enDescription?: true
+    arDescription?: true
+    imgUrl?: true
     timezone?: true
     enCurrency?: true
     arCurrency?: true
@@ -12852,6 +12885,11 @@ export namespace Prisma {
   export type SettingsMaxAggregateInputType = {
     id?: true
     userId?: true
+    enTitle?: true
+    arTitle?: true
+    enDescription?: true
+    arDescription?: true
+    imgUrl?: true
     timezone?: true
     enCurrency?: true
     arCurrency?: true
@@ -12867,6 +12905,11 @@ export namespace Prisma {
   export type SettingsCountAggregateInputType = {
     id?: true
     userId?: true
+    enTitle?: true
+    arTitle?: true
+    enDescription?: true
+    arDescription?: true
+    imgUrl?: true
     timezone?: true
     enCurrency?: true
     arCurrency?: true
@@ -12969,6 +13012,11 @@ export namespace Prisma {
   export type SettingsGroupByOutputType = {
     id: number
     userId: number
+    enTitle: string | null
+    arTitle: string | null
+    enDescription: string | null
+    arDescription: string | null
+    imgUrl: string | null
     timezone: string
     enCurrency: string
     arCurrency: string
@@ -13003,6 +13051,11 @@ export namespace Prisma {
   export type SettingsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     userId?: boolean
+    enTitle?: boolean
+    arTitle?: boolean
+    enDescription?: boolean
+    arDescription?: boolean
+    imgUrl?: boolean
     timezone?: boolean
     enCurrency?: boolean
     arCurrency?: boolean
@@ -13019,6 +13072,11 @@ export namespace Prisma {
   export type SettingsSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     userId?: boolean
+    enTitle?: boolean
+    arTitle?: boolean
+    enDescription?: boolean
+    arDescription?: boolean
+    imgUrl?: boolean
     timezone?: boolean
     enCurrency?: boolean
     arCurrency?: boolean
@@ -13035,6 +13093,11 @@ export namespace Prisma {
   export type SettingsSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     userId?: boolean
+    enTitle?: boolean
+    arTitle?: boolean
+    enDescription?: boolean
+    arDescription?: boolean
+    imgUrl?: boolean
     timezone?: boolean
     enCurrency?: boolean
     arCurrency?: boolean
@@ -13051,6 +13114,11 @@ export namespace Prisma {
   export type SettingsSelectScalar = {
     id?: boolean
     userId?: boolean
+    enTitle?: boolean
+    arTitle?: boolean
+    enDescription?: boolean
+    arDescription?: boolean
+    imgUrl?: boolean
     timezone?: boolean
     enCurrency?: boolean
     arCurrency?: boolean
@@ -13063,7 +13131,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type SettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "timezone" | "enCurrency" | "arCurrency" | "usdToIqd" | "pointsPerDollar" | "pointsPerIQD" | "printerType" | "printerIp" | "port" | "updatedAt", ExtArgs["result"]["settings"]>
+  export type SettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "enTitle" | "arTitle" | "enDescription" | "arDescription" | "imgUrl" | "timezone" | "enCurrency" | "arCurrency" | "usdToIqd" | "pointsPerDollar" | "pointsPerIQD" | "printerType" | "printerIp" | "port" | "updatedAt", ExtArgs["result"]["settings"]>
   export type SettingsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -13082,6 +13150,11 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: number
       userId: number
+      enTitle: string | null
+      arTitle: string | null
+      enDescription: string | null
+      arDescription: string | null
+      imgUrl: string | null
       timezone: string
       enCurrency: string
       arCurrency: string
@@ -13518,6 +13591,11 @@ export namespace Prisma {
   interface SettingsFieldRefs {
     readonly id: FieldRef<"Settings", 'Int'>
     readonly userId: FieldRef<"Settings", 'Int'>
+    readonly enTitle: FieldRef<"Settings", 'String'>
+    readonly arTitle: FieldRef<"Settings", 'String'>
+    readonly enDescription: FieldRef<"Settings", 'String'>
+    readonly arDescription: FieldRef<"Settings", 'String'>
+    readonly imgUrl: FieldRef<"Settings", 'String'>
     readonly timezone: FieldRef<"Settings", 'String'>
     readonly enCurrency: FieldRef<"Settings", 'String'>
     readonly arCurrency: FieldRef<"Settings", 'String'>
@@ -16536,7 +16614,8 @@ export namespace Prisma {
     type: 'type',
     status: 'status',
     date: 'date',
-    note: 'note'
+    note: 'note',
+    synced: 'synced'
   };
 
   export type MyRewardScalarFieldEnum = (typeof MyRewardScalarFieldEnum)[keyof typeof MyRewardScalarFieldEnum]
@@ -16562,6 +16641,11 @@ export namespace Prisma {
   export const SettingsScalarFieldEnum: {
     id: 'id',
     userId: 'userId',
+    enTitle: 'enTitle',
+    arTitle: 'arTitle',
+    enDescription: 'enDescription',
+    arDescription: 'arDescription',
+    imgUrl: 'imgUrl',
     timezone: 'timezone',
     enCurrency: 'enCurrency',
     arCurrency: 'arCurrency',
@@ -16751,6 +16835,13 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Boolean'
+   */
+  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+  /**
    * Reference to a field of type 'Json'
    */
   export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
@@ -16775,13 +16866,6 @@ export namespace Prisma {
    * Reference to a field of type 'TransactionStatus[]'
    */
   export type ListEnumTransactionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TransactionStatus[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'Boolean'
-   */
-  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -17290,6 +17374,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFilter<"MyReward"> | $Enums.RewardStatus
     date?: DateTimeFilter<"MyReward"> | Date | string
     note?: StringNullableFilter<"MyReward"> | string | null
+    synced?: BoolFilter<"MyReward"> | boolean
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     cafeProduct?: XOR<CafeProductNullableScalarRelationFilter, CafeProductWhereInput> | null
     restaurantProduct?: XOR<RestaurantProductNullableScalarRelationFilter, RestaurantProductWhereInput> | null
@@ -17305,6 +17390,7 @@ export namespace Prisma {
     status?: SortOrder
     date?: SortOrder
     note?: SortOrderInput | SortOrder
+    synced?: SortOrder
     user?: UserOrderByWithRelationInput
     cafeProduct?: CafeProductOrderByWithRelationInput
     restaurantProduct?: RestaurantProductOrderByWithRelationInput
@@ -17323,6 +17409,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFilter<"MyReward"> | $Enums.RewardStatus
     date?: DateTimeFilter<"MyReward"> | Date | string
     note?: StringNullableFilter<"MyReward"> | string | null
+    synced?: BoolFilter<"MyReward"> | boolean
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     cafeProduct?: XOR<CafeProductNullableScalarRelationFilter, CafeProductWhereInput> | null
     restaurantProduct?: XOR<RestaurantProductNullableScalarRelationFilter, RestaurantProductWhereInput> | null
@@ -17338,6 +17425,7 @@ export namespace Prisma {
     status?: SortOrder
     date?: SortOrder
     note?: SortOrderInput | SortOrder
+    synced?: SortOrder
     _count?: MyRewardCountOrderByAggregateInput
     _avg?: MyRewardAvgOrderByAggregateInput
     _max?: MyRewardMaxOrderByAggregateInput
@@ -17358,6 +17446,7 @@ export namespace Prisma {
     status?: EnumRewardStatusWithAggregatesFilter<"MyReward"> | $Enums.RewardStatus
     date?: DateTimeWithAggregatesFilter<"MyReward"> | Date | string
     note?: StringNullableWithAggregatesFilter<"MyReward"> | string | null
+    synced?: BoolWithAggregatesFilter<"MyReward"> | boolean
   }
 
   export type TransactionWhereInput = {
@@ -17462,6 +17551,11 @@ export namespace Prisma {
     NOT?: SettingsWhereInput | SettingsWhereInput[]
     id?: IntFilter<"Settings"> | number
     userId?: IntFilter<"Settings"> | number
+    enTitle?: StringNullableFilter<"Settings"> | string | null
+    arTitle?: StringNullableFilter<"Settings"> | string | null
+    enDescription?: StringNullableFilter<"Settings"> | string | null
+    arDescription?: StringNullableFilter<"Settings"> | string | null
+    imgUrl?: StringNullableFilter<"Settings"> | string | null
     timezone?: StringFilter<"Settings"> | string
     enCurrency?: StringFilter<"Settings"> | string
     arCurrency?: StringFilter<"Settings"> | string
@@ -17478,6 +17572,11 @@ export namespace Prisma {
   export type SettingsOrderByWithRelationInput = {
     id?: SortOrder
     userId?: SortOrder
+    enTitle?: SortOrderInput | SortOrder
+    arTitle?: SortOrderInput | SortOrder
+    enDescription?: SortOrderInput | SortOrder
+    arDescription?: SortOrderInput | SortOrder
+    imgUrl?: SortOrderInput | SortOrder
     timezone?: SortOrder
     enCurrency?: SortOrder
     arCurrency?: SortOrder
@@ -17497,6 +17596,11 @@ export namespace Prisma {
     AND?: SettingsWhereInput | SettingsWhereInput[]
     OR?: SettingsWhereInput[]
     NOT?: SettingsWhereInput | SettingsWhereInput[]
+    enTitle?: StringNullableFilter<"Settings"> | string | null
+    arTitle?: StringNullableFilter<"Settings"> | string | null
+    enDescription?: StringNullableFilter<"Settings"> | string | null
+    arDescription?: StringNullableFilter<"Settings"> | string | null
+    imgUrl?: StringNullableFilter<"Settings"> | string | null
     timezone?: StringFilter<"Settings"> | string
     enCurrency?: StringFilter<"Settings"> | string
     arCurrency?: StringFilter<"Settings"> | string
@@ -17513,6 +17617,11 @@ export namespace Prisma {
   export type SettingsOrderByWithAggregationInput = {
     id?: SortOrder
     userId?: SortOrder
+    enTitle?: SortOrderInput | SortOrder
+    arTitle?: SortOrderInput | SortOrder
+    enDescription?: SortOrderInput | SortOrder
+    arDescription?: SortOrderInput | SortOrder
+    imgUrl?: SortOrderInput | SortOrder
     timezone?: SortOrder
     enCurrency?: SortOrder
     arCurrency?: SortOrder
@@ -17536,6 +17645,11 @@ export namespace Prisma {
     NOT?: SettingsScalarWhereWithAggregatesInput | SettingsScalarWhereWithAggregatesInput[]
     id?: IntWithAggregatesFilter<"Settings"> | number
     userId?: IntWithAggregatesFilter<"Settings"> | number
+    enTitle?: StringNullableWithAggregatesFilter<"Settings"> | string | null
+    arTitle?: StringNullableWithAggregatesFilter<"Settings"> | string | null
+    enDescription?: StringNullableWithAggregatesFilter<"Settings"> | string | null
+    arDescription?: StringNullableWithAggregatesFilter<"Settings"> | string | null
+    imgUrl?: StringNullableWithAggregatesFilter<"Settings"> | string | null
     timezone?: StringWithAggregatesFilter<"Settings"> | string
     enCurrency?: StringWithAggregatesFilter<"Settings"> | string
     arCurrency?: StringWithAggregatesFilter<"Settings"> | string
@@ -18210,6 +18324,7 @@ export namespace Prisma {
     status?: $Enums.RewardStatus
     date?: Date | string
     note?: string | null
+    synced?: boolean
     user: UserCreateNestedOneWithoutMyRewardsInput
     cafeProduct?: CafeProductCreateNestedOneWithoutMyRewardsInput
     restaurantProduct?: RestaurantProductCreateNestedOneWithoutMyRewardsInput
@@ -18225,6 +18340,7 @@ export namespace Prisma {
     status?: $Enums.RewardStatus
     date?: Date | string
     note?: string | null
+    synced?: boolean
   }
 
   export type MyRewardUpdateInput = {
@@ -18233,6 +18349,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFieldUpdateOperationsInput | $Enums.RewardStatus
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    synced?: BoolFieldUpdateOperationsInput | boolean
     user?: UserUpdateOneRequiredWithoutMyRewardsNestedInput
     cafeProduct?: CafeProductUpdateOneWithoutMyRewardsNestedInput
     restaurantProduct?: RestaurantProductUpdateOneWithoutMyRewardsNestedInput
@@ -18248,6 +18365,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFieldUpdateOperationsInput | $Enums.RewardStatus
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    synced?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type MyRewardCreateManyInput = {
@@ -18260,6 +18378,7 @@ export namespace Prisma {
     status?: $Enums.RewardStatus
     date?: Date | string
     note?: string | null
+    synced?: boolean
   }
 
   export type MyRewardUpdateManyMutationInput = {
@@ -18268,6 +18387,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFieldUpdateOperationsInput | $Enums.RewardStatus
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    synced?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type MyRewardUncheckedUpdateManyInput = {
@@ -18280,6 +18400,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFieldUpdateOperationsInput | $Enums.RewardStatus
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    synced?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type TransactionCreateInput = {
@@ -18374,6 +18495,11 @@ export namespace Prisma {
   }
 
   export type SettingsCreateInput = {
+    enTitle?: string | null
+    arTitle?: string | null
+    enDescription?: string | null
+    arDescription?: string | null
+    imgUrl?: string | null
     timezone?: string
     enCurrency: string
     arCurrency: string
@@ -18390,6 +18516,11 @@ export namespace Prisma {
   export type SettingsUncheckedCreateInput = {
     id?: number
     userId: number
+    enTitle?: string | null
+    arTitle?: string | null
+    enDescription?: string | null
+    arDescription?: string | null
+    imgUrl?: string | null
     timezone?: string
     enCurrency: string
     arCurrency: string
@@ -18403,6 +18534,11 @@ export namespace Prisma {
   }
 
   export type SettingsUpdateInput = {
+    enTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    arTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    enDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    arDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    imgUrl?: NullableStringFieldUpdateOperationsInput | string | null
     timezone?: StringFieldUpdateOperationsInput | string
     enCurrency?: StringFieldUpdateOperationsInput | string
     arCurrency?: StringFieldUpdateOperationsInput | string
@@ -18419,6 +18555,11 @@ export namespace Prisma {
   export type SettingsUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
     userId?: IntFieldUpdateOperationsInput | number
+    enTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    arTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    enDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    arDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    imgUrl?: NullableStringFieldUpdateOperationsInput | string | null
     timezone?: StringFieldUpdateOperationsInput | string
     enCurrency?: StringFieldUpdateOperationsInput | string
     arCurrency?: StringFieldUpdateOperationsInput | string
@@ -18434,6 +18575,11 @@ export namespace Prisma {
   export type SettingsCreateManyInput = {
     id?: number
     userId: number
+    enTitle?: string | null
+    arTitle?: string | null
+    enDescription?: string | null
+    arDescription?: string | null
+    imgUrl?: string | null
     timezone?: string
     enCurrency: string
     arCurrency: string
@@ -18447,6 +18593,11 @@ export namespace Prisma {
   }
 
   export type SettingsUpdateManyMutationInput = {
+    enTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    arTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    enDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    arDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    imgUrl?: NullableStringFieldUpdateOperationsInput | string | null
     timezone?: StringFieldUpdateOperationsInput | string
     enCurrency?: StringFieldUpdateOperationsInput | string
     arCurrency?: StringFieldUpdateOperationsInput | string
@@ -18462,6 +18613,11 @@ export namespace Prisma {
   export type SettingsUncheckedUpdateManyInput = {
     id?: IntFieldUpdateOperationsInput | number
     userId?: IntFieldUpdateOperationsInput | number
+    enTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    arTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    enDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    arDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    imgUrl?: NullableStringFieldUpdateOperationsInput | string | null
     timezone?: StringFieldUpdateOperationsInput | string
     enCurrency?: StringFieldUpdateOperationsInput | string
     arCurrency?: StringFieldUpdateOperationsInput | string
@@ -19218,6 +19374,11 @@ export namespace Prisma {
     not?: NestedEnumRewardStatusFilter<$PrismaModel> | $Enums.RewardStatus
   }
 
+  export type BoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type CafeProductNullableScalarRelationFilter = {
     is?: CafeProductWhereInput | null
     isNot?: CafeProductWhereInput | null
@@ -19238,6 +19399,7 @@ export namespace Prisma {
     status?: SortOrder
     date?: SortOrder
     note?: SortOrder
+    synced?: SortOrder
   }
 
   export type MyRewardAvgOrderByAggregateInput = {
@@ -19258,6 +19420,7 @@ export namespace Prisma {
     status?: SortOrder
     date?: SortOrder
     note?: SortOrder
+    synced?: SortOrder
   }
 
   export type MyRewardMinOrderByAggregateInput = {
@@ -19270,6 +19433,7 @@ export namespace Prisma {
     status?: SortOrder
     date?: SortOrder
     note?: SortOrder
+    synced?: SortOrder
   }
 
   export type MyRewardSumOrderByAggregateInput = {
@@ -19288,6 +19452,14 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumRewardStatusFilter<$PrismaModel>
     _max?: NestedEnumRewardStatusFilter<$PrismaModel>
+  }
+
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
   export type JsonFilter<$PrismaModel = never> =
     | PatchUndefined<
@@ -19318,11 +19490,6 @@ export namespace Prisma {
     in?: $Enums.TransactionStatus[] | ListEnumTransactionStatusFieldRefInput<$PrismaModel>
     notIn?: $Enums.TransactionStatus[] | ListEnumTransactionStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumTransactionStatusFilter<$PrismaModel> | $Enums.TransactionStatus
-  }
-
-  export type BoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
   export type InvoiceNullableScalarRelationFilter = {
@@ -19424,14 +19591,6 @@ export namespace Prisma {
     _max?: NestedEnumTransactionStatusFilter<$PrismaModel>
   }
 
-  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
-  }
-
   export type EnumPrinterTypeFilter<$PrismaModel = never> = {
     equals?: $Enums.PrinterType | EnumPrinterTypeFieldRefInput<$PrismaModel>
     in?: $Enums.PrinterType[] | ListEnumPrinterTypeFieldRefInput<$PrismaModel>
@@ -19442,6 +19601,11 @@ export namespace Prisma {
   export type SettingsCountOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
+    enTitle?: SortOrder
+    arTitle?: SortOrder
+    enDescription?: SortOrder
+    arDescription?: SortOrder
+    imgUrl?: SortOrder
     timezone?: SortOrder
     enCurrency?: SortOrder
     arCurrency?: SortOrder
@@ -19466,6 +19630,11 @@ export namespace Prisma {
   export type SettingsMaxOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
+    enTitle?: SortOrder
+    arTitle?: SortOrder
+    enDescription?: SortOrder
+    arDescription?: SortOrder
+    imgUrl?: SortOrder
     timezone?: SortOrder
     enCurrency?: SortOrder
     arCurrency?: SortOrder
@@ -19481,6 +19650,11 @@ export namespace Prisma {
   export type SettingsMinOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
+    enTitle?: SortOrder
+    arTitle?: SortOrder
+    enDescription?: SortOrder
+    arDescription?: SortOrder
+    imgUrl?: SortOrder
     timezone?: SortOrder
     enCurrency?: SortOrder
     arCurrency?: SortOrder
@@ -20354,6 +20528,10 @@ export namespace Prisma {
     set?: $Enums.RewardStatus
   }
 
+  export type BoolFieldUpdateOperationsInput = {
+    set?: boolean
+  }
+
   export type UserUpdateOneRequiredWithoutMyRewardsNestedInput = {
     create?: XOR<UserCreateWithoutMyRewardsInput, UserUncheckedCreateWithoutMyRewardsInput>
     connectOrCreate?: UserCreateOrConnectWithoutMyRewardsInput
@@ -20408,10 +20586,6 @@ export namespace Prisma {
 
   export type EnumTransactionStatusFieldUpdateOperationsInput = {
     set?: $Enums.TransactionStatus
-  }
-
-  export type BoolFieldUpdateOperationsInput = {
-    set?: boolean
   }
 
   export type CafeProductUpdateOneWithoutTransactionsNestedInput = {
@@ -20850,6 +21024,11 @@ export namespace Prisma {
     not?: NestedEnumRewardStatusFilter<$PrismaModel> | $Enums.RewardStatus
   }
 
+  export type NestedBoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type NestedEnumRewardStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.RewardStatus | EnumRewardStatusFieldRefInput<$PrismaModel>
     in?: $Enums.RewardStatus[] | ListEnumRewardStatusFieldRefInput<$PrismaModel>
@@ -20860,16 +21039,19 @@ export namespace Prisma {
     _max?: NestedEnumRewardStatusFilter<$PrismaModel>
   }
 
+  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
+  }
+
   export type NestedEnumTransactionStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.TransactionStatus | EnumTransactionStatusFieldRefInput<$PrismaModel>
     in?: $Enums.TransactionStatus[] | ListEnumTransactionStatusFieldRefInput<$PrismaModel>
     notIn?: $Enums.TransactionStatus[] | ListEnumTransactionStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumTransactionStatusFilter<$PrismaModel> | $Enums.TransactionStatus
-  }
-
-  export type NestedBoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
   }
   export type NestedJsonFilter<$PrismaModel = never> =
     | PatchUndefined<
@@ -20903,14 +21085,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumTransactionStatusFilter<$PrismaModel>
     _max?: NestedEnumTransactionStatusFilter<$PrismaModel>
-  }
-
-  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type NestedEnumPrinterTypeFilter<$PrismaModel = never> = {
@@ -21010,6 +21184,7 @@ export namespace Prisma {
     status?: $Enums.RewardStatus
     date?: Date | string
     note?: string | null
+    synced?: boolean
     cafeProduct?: CafeProductCreateNestedOneWithoutMyRewardsInput
     restaurantProduct?: RestaurantProductCreateNestedOneWithoutMyRewardsInput
   }
@@ -21023,6 +21198,7 @@ export namespace Prisma {
     status?: $Enums.RewardStatus
     date?: Date | string
     note?: string | null
+    synced?: boolean
   }
 
   export type MyRewardCreateOrConnectWithoutUserInput = {
@@ -21036,6 +21212,11 @@ export namespace Prisma {
   }
 
   export type SettingsCreateWithoutUserInput = {
+    enTitle?: string | null
+    arTitle?: string | null
+    enDescription?: string | null
+    arDescription?: string | null
+    imgUrl?: string | null
     timezone?: string
     enCurrency: string
     arCurrency: string
@@ -21050,6 +21231,11 @@ export namespace Prisma {
 
   export type SettingsUncheckedCreateWithoutUserInput = {
     id?: number
+    enTitle?: string | null
+    arTitle?: string | null
+    enDescription?: string | null
+    arDescription?: string | null
+    imgUrl?: string | null
     timezone?: string
     enCurrency: string
     arCurrency: string
@@ -21193,6 +21379,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFilter<"MyReward"> | $Enums.RewardStatus
     date?: DateTimeFilter<"MyReward"> | Date | string
     note?: StringNullableFilter<"MyReward"> | string | null
+    synced?: BoolFilter<"MyReward"> | boolean
   }
 
   export type SettingsUpsertWithoutUserInput = {
@@ -21207,6 +21394,11 @@ export namespace Prisma {
   }
 
   export type SettingsUpdateWithoutUserInput = {
+    enTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    arTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    enDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    arDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    imgUrl?: NullableStringFieldUpdateOperationsInput | string | null
     timezone?: StringFieldUpdateOperationsInput | string
     enCurrency?: StringFieldUpdateOperationsInput | string
     arCurrency?: StringFieldUpdateOperationsInput | string
@@ -21221,6 +21413,11 @@ export namespace Prisma {
 
   export type SettingsUncheckedUpdateWithoutUserInput = {
     id?: IntFieldUpdateOperationsInput | number
+    enTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    arTitle?: NullableStringFieldUpdateOperationsInput | string | null
+    enDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    arDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    imgUrl?: NullableStringFieldUpdateOperationsInput | string | null
     timezone?: StringFieldUpdateOperationsInput | string
     enCurrency?: StringFieldUpdateOperationsInput | string
     arCurrency?: StringFieldUpdateOperationsInput | string
@@ -21570,6 +21767,7 @@ export namespace Prisma {
     status?: $Enums.RewardStatus
     date?: Date | string
     note?: string | null
+    synced?: boolean
     user: UserCreateNestedOneWithoutMyRewardsInput
     restaurantProduct?: RestaurantProductCreateNestedOneWithoutMyRewardsInput
   }
@@ -21583,6 +21781,7 @@ export namespace Prisma {
     status?: $Enums.RewardStatus
     date?: Date | string
     note?: string | null
+    synced?: boolean
   }
 
   export type MyRewardCreateOrConnectWithoutCafeProductInput = {
@@ -21767,6 +21966,7 @@ export namespace Prisma {
     status?: $Enums.RewardStatus
     date?: Date | string
     note?: string | null
+    synced?: boolean
     user: UserCreateNestedOneWithoutMyRewardsInput
     cafeProduct?: CafeProductCreateNestedOneWithoutMyRewardsInput
   }
@@ -21780,6 +21980,7 @@ export namespace Prisma {
     status?: $Enums.RewardStatus
     date?: Date | string
     note?: string | null
+    synced?: boolean
   }
 
   export type MyRewardCreateOrConnectWithoutRestaurantProductInput = {
@@ -23008,6 +23209,7 @@ export namespace Prisma {
     status?: $Enums.RewardStatus
     date?: Date | string
     note?: string | null
+    synced?: boolean
   }
 
   export type InvoiceCreateManyUserInput = {
@@ -23086,6 +23288,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFieldUpdateOperationsInput | $Enums.RewardStatus
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    synced?: BoolFieldUpdateOperationsInput | boolean
     cafeProduct?: CafeProductUpdateOneWithoutMyRewardsNestedInput
     restaurantProduct?: RestaurantProductUpdateOneWithoutMyRewardsNestedInput
   }
@@ -23099,6 +23302,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFieldUpdateOperationsInput | $Enums.RewardStatus
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    synced?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type MyRewardUncheckedUpdateManyWithoutUserInput = {
@@ -23110,6 +23314,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFieldUpdateOperationsInput | $Enums.RewardStatus
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    synced?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type InvoiceUpdateWithoutUserInput = {
@@ -23289,6 +23494,7 @@ export namespace Prisma {
     status?: $Enums.RewardStatus
     date?: Date | string
     note?: string | null
+    synced?: boolean
   }
 
   export type TransactionCreateManyCafeProductInput = {
@@ -23320,6 +23526,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFieldUpdateOperationsInput | $Enums.RewardStatus
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    synced?: BoolFieldUpdateOperationsInput | boolean
     user?: UserUpdateOneRequiredWithoutMyRewardsNestedInput
     restaurantProduct?: RestaurantProductUpdateOneWithoutMyRewardsNestedInput
   }
@@ -23333,6 +23540,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFieldUpdateOperationsInput | $Enums.RewardStatus
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    synced?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type MyRewardUncheckedUpdateManyWithoutCafeProductInput = {
@@ -23344,6 +23552,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFieldUpdateOperationsInput | $Enums.RewardStatus
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    synced?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type TransactionUpdateWithoutCafeProductInput = {
@@ -23422,6 +23631,7 @@ export namespace Prisma {
     status?: $Enums.RewardStatus
     date?: Date | string
     note?: string | null
+    synced?: boolean
   }
 
   export type TransactionCreateManyRestaurantProductInput = {
@@ -23453,6 +23663,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFieldUpdateOperationsInput | $Enums.RewardStatus
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    synced?: BoolFieldUpdateOperationsInput | boolean
     user?: UserUpdateOneRequiredWithoutMyRewardsNestedInput
     cafeProduct?: CafeProductUpdateOneWithoutMyRewardsNestedInput
   }
@@ -23466,6 +23677,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFieldUpdateOperationsInput | $Enums.RewardStatus
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    synced?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type MyRewardUncheckedUpdateManyWithoutRestaurantProductInput = {
@@ -23477,6 +23689,7 @@ export namespace Prisma {
     status?: EnumRewardStatusFieldUpdateOperationsInput | $Enums.RewardStatus
     date?: DateTimeFieldUpdateOperationsInput | Date | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    synced?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type TransactionUpdateWithoutRestaurantProductInput = {

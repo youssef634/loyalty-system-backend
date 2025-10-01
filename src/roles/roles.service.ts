@@ -1,51 +1,114 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { CloudPrismaService} from '../prisma/prisma.service/cloud-prisma.service';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { CloudPrismaService } from '../prisma/prisma.service/cloud-prisma.service';
+import { LocalPrismaService } from '../prisma/prisma.service/local-prisma.service';
+import { ConnectionService } from '../connection/connection.service';
 import { Role } from '@prisma/client';
 
 @Injectable()
 export class RolesService {
-    constructor(private prisma: CloudPrismaService) { }
-    
-    async hasPagePermission(userRole: Role, pageName: string): Promise<boolean> {
-        if (userRole === Role.ADMIN) return true;
+  private readonly logger = new Logger(RolesService.name);
 
-        const permission = await this.prisma.rolePermission.findFirst({
-            where: { role: userRole, page: pageName },
+  constructor(
+    private cloudPrisma: CloudPrismaService,
+    private localPrisma: LocalPrismaService,
+    private connectionService: ConnectionService,
+  ) { }
+
+  async hasPagePermission(userRole: Role, pageName: string): Promise<boolean> {
+    const isOnline = this.connectionService.getConnectionStatus();
+    const prismaService = isOnline ? this.cloudPrisma : this.localPrisma;
+
+    if (userRole === Role.ADMIN) return true;
+
+    const permission = await prismaService.rolePermission.findFirst({
+      where: { role: userRole, page: pageName },
+    });
+
+    return !!permission;
+  }
+
+  async createPermission(role: Role, pages: string[]) {
+    const isOnline = this.connectionService.getConnectionStatus();
+
+    if (!isOnline) {
+      throw new BadRequestException('Permission creation requires internet connection');
+    }
+
+    if (!pages || pages.length === 0) throw new BadRequestException('Pages required');
+
+    const created = [];
+    for (const page of pages) {
+      const exists = await this.cloudPrisma.rolePermission.findUnique({
+        where: { role_page: { role, page } },
+      });
+      if (!exists) {
+        const perm = await this.cloudPrisma.rolePermission.create({
+          data: { role, page },
         });
+        created.push(perm);
 
-        return !!permission;
-    }
-
-    async createPermission(role: Role, pages: string[]) {
-        if (!pages || pages.length === 0) throw new BadRequestException('Pages required');
-
-        const created = [];
-        for (const page of pages) {
-            const exists = await this.prisma.rolePermission.findUnique({
-                where: { role_page: { role, page } }, // composite unique
-            });
-            if (!exists) {
-                const perm = await this.prisma.rolePermission.create({
-                    data: { role, page },
-                });
-                created.push(perm);
-            }
+        // Sync to local database
+        try {
+          await this.localPrisma.rolePermission.create({
+            data: { id: perm.id, role, page },
+          });
+          this.logger.log(`Permission for role ${role} and page ${page} synced to local database`);
+        } catch (error) {
+          this.logger.warn(`Failed to sync permission for role ${role} and page ${page} to local DB: ${error}`);
         }
-        return created;
+      }
     }
 
-    async updatePermissions(role: Role, pages: string[]) {
-        // Delete all old permissions for this role
-        await this.prisma.rolePermission.deleteMany({ where: { role } });
+    return created;
+  }
 
-        // Add new permissions
-        const created = await Promise.all(
-            pages.map(page => this.prisma.rolePermission.create({ data: { role, page } }))
-        );
-        return created;
+  async updatePermissions(role: Role, pages: string[]) {
+    const isOnline = this.connectionService.getConnectionStatus();
+
+    if (!isOnline) {
+      throw new BadRequestException('Permission updates require internet connection');
     }
 
-    async getPermissions(role: Role) {
-        return this.prisma.rolePermission.findMany({ where: { role } });
+    // Delete all old permissions for this role in cloud
+    await this.cloudPrisma.rolePermission.deleteMany({ where: { role } });
+
+    // Add new permissions in cloud
+    const created = await Promise.all(
+      pages.map(page =>
+        this.cloudPrisma.rolePermission.create({ data: { role, page } })
+      )
+    );
+
+    // Sync to local database with the same IDs
+    try {
+      await this.localPrisma.rolePermission.deleteMany({ where: { role } });
+
+      await Promise.all(
+        created.map(perm =>
+          this.localPrisma.rolePermission.create({
+            data: {
+              id: perm.id,  
+              role: perm.role,
+              page: perm.page,
+            },
+          })
+        )
+      );
+
+      this.logger.log(`Permissions for role ${role} synced to local database`);
+    } catch (error) {
+      this.logger.warn(
+        `Failed to sync permissions for role ${role} to local DB: ${error}`,
+      );
     }
+
+    return created;
+  }
+
+  async getPermissions(role: Role) {
+    const isOnline = this.connectionService.getConnectionStatus();
+    const prismaService = isOnline ? this.cloudPrisma : this.localPrisma;
+
+    return prismaService.rolePermission.findMany({ where: { role } });
+  }
 }
