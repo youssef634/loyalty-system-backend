@@ -115,6 +115,65 @@ export class PosService {
       return { invoice, transaction };
     });
 
+    // Sync to local database
+    try {
+      await this.localPrisma.$transaction(async (tx) => {
+        const localInvoice = await tx.invoice.create({
+          data: {
+            id: result.invoice.id,
+            userId: user?.id || null,
+            phone: user?.phone || null,
+            email: user?.email || null,
+            totalPrice: data.totalPrice,
+            discount: data.discount ?? 0,
+            points,
+            currency: settings.enCurrency,
+            synced: true,
+            createdAt: result.invoice.createdAt,
+            items: {
+              create: data.items.map((item) => ({
+                id: result.invoice.items.find(i => 
+                  i.quantity === item.quantity &&
+                  i.price === item.price &&
+                  i.categoryId === item.categoryId &&
+                  (item.type === 'cafe' ? i.cafeProductId === item.productId : i.restaurantProductId === item.productId)
+                )?.id,
+                quantity: item.quantity,
+                price: item.price,
+                total: item.total,
+                categoryId: item.categoryId,
+                cafeProductId: item.type === 'cafe' ? item.productId : null,
+                restaurantProductId: item.type === 'restaurant' ? item.productId : null,
+              })),
+            },
+          },
+        });
+
+        if (user && result.transaction) {
+          await tx.transaction.create({
+            data: {
+              id: result.transaction.id,
+              type: 'earn',
+              points,
+              userId: user.id,
+              invoiceId: localInvoice.id,
+              currency: { enCurrency: settings.enCurrency, arCurrency: settings.arCurrency } as any,
+              synced: true,
+              date: result.transaction.createdAt,
+            },
+          });
+
+          await tx.user.update({
+            where: { id: user.id },
+            data: { points: user.points + points },
+          });
+        }
+      });
+      this.logger.log(`Invoice ${result.invoice.id} synced to local database`);
+    } catch (error) {
+      this.logger.warn(`Failed to sync invoice to local DB: ${error}`);
+    }
+
     // Print after the transaction is committed
     const receiptFile = await this.printService.invokePrinter(result.invoice.id, 'emulator');
     return { ...result, receiptFile, source: 'cloud' };

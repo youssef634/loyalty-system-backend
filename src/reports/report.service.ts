@@ -1,14 +1,27 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { CloudPrismaService } from '../prisma/prisma.service/cloud-prisma.service';
+import { LocalPrismaService } from '../prisma/prisma.service/local-prisma.service';
+import { ConnectionService } from '../connection/connection.service';
 import { Role } from '@prisma/client';
 
 @Injectable()
 export class ReportService {
-    constructor(private prisma: CloudPrismaService) { }
+    private readonly logger = new Logger(ReportService.name);
+
+    constructor(
+        private cloudPrisma: CloudPrismaService,
+        private localPrisma: LocalPrismaService,
+        private connectionService: ConnectionService,
+    ) { }
 
     /** 1- Manager Report (exclude USERs, optional role filter) */
     async managerReport(role?: Role) {
-        return this.prisma.user.findMany({
+        const isOnline = this.connectionService.getConnectionStatus();
+        const prismaService: any = isOnline ? this.cloudPrisma : this.localPrisma;
+
+        this.logger.log(`Fetching manager report from ${isOnline ? 'cloud' : 'local'} database`);
+
+        return prismaService.user.findMany({
             where: {
                 role: role ? role : undefined,
                 NOT: { role: 'USER' },
@@ -27,7 +40,12 @@ export class ReportService {
 
     /** 2- Customers Report */
     async customersReport() {
-        return this.prisma.user.findMany({
+        const isOnline = this.connectionService.getConnectionStatus();
+        const prismaService: any = isOnline ? this.cloudPrisma : this.localPrisma;
+
+        this.logger.log(`Fetching customers report from ${isOnline ? 'cloud' : 'local'} database`);
+
+        return prismaService.user.findMany({
             where: { role: 'USER' },
             select: {
                 id: true,
@@ -46,7 +64,12 @@ export class ReportService {
 
     /** 3- Individual Customer Report (by id or phone) */
     async customerReport(search: { id?: number; phone?: string }) {
-        const user = await this.prisma.user.findFirst({
+        const isOnline = this.connectionService.getConnectionStatus();
+        const prismaService: any = isOnline ? this.cloudPrisma : this.localPrisma;
+
+        this.logger.log(`Fetching customer report from ${isOnline ? 'cloud' : 'local'} database`);
+
+        const user = await prismaService.user.findFirst({
             where: {
                 OR: [
                     search.id ? { id: search.id } : undefined,
@@ -94,7 +117,12 @@ export class ReportService {
 
     /** 4- Transaction Report (exclude CANCELLED, optional filter type/date) */
     async transactionsReport(filter?: { type?: string; startDate?: Date; endDate?: Date }) {
-        return this.prisma.transaction.findMany({
+        const isOnline = this.connectionService.getConnectionStatus();
+        const prismaService: any = isOnline ? this.cloudPrisma : this.localPrisma;
+
+        this.logger.log(`Fetching transactions report from ${isOnline ? 'cloud' : 'local'} database`);
+
+        return prismaService.transaction.findMany({
             where: {
                 status: { not: 'CANCELLED' },
                 type: filter?.type ? filter.type : undefined,
@@ -118,7 +146,12 @@ export class ReportService {
 
     /** 5- Products Report (optional filter by type/category) */
     async productsReport(filter?: { type?: string; categoryId?: number }) {
-        const cafeProducts = await this.prisma.cafeProduct.findMany({
+        const isOnline = this.connectionService.getConnectionStatus();
+        const prismaService: any = isOnline ? this.cloudPrisma : this.localPrisma;
+
+        this.logger.log(`Fetching products report from ${isOnline ? 'cloud' : 'local'} database`);
+
+        const cafeProducts = await prismaService.cafeProduct.findMany({
             where: {
                 type: filter?.type || undefined,
                 categoryId: filter?.categoryId || undefined,
@@ -134,7 +167,7 @@ export class ReportService {
             },
         });
 
-        const restaurantProducts = await this.prisma.restaurantProduct.findMany({
+        const restaurantProducts = await prismaService.restaurantProduct.findMany({
             where: {
                 type: filter?.type || undefined,
                 categoryId: filter?.categoryId || undefined,
@@ -155,7 +188,12 @@ export class ReportService {
 
     /** 6- Rewards Report (only APPROVED, optional filter by date/product type) */
     async rewardsReport(filter?: { startDate?: Date; endDate?: Date; type?: string }) {
-        return this.prisma.myReward.findMany({
+        const isOnline = this.connectionService.getConnectionStatus();
+        const prismaService: any = isOnline ? this.cloudPrisma : this.localPrisma;
+
+        this.logger.log(`Fetching rewards report from ${isOnline ? 'cloud' : 'local'} database`);
+
+        return prismaService.myReward.findMany({
             where: {
                 status: 'APPROVED',
                 type: filter?.type || undefined,
@@ -189,7 +227,12 @@ export class ReportService {
         minPrice?: number;
         maxPrice?: number;
     }) {
-        return this.prisma.invoice.findMany({
+        const isOnline = this.connectionService.getConnectionStatus();
+        const prismaService: any = isOnline ? this.cloudPrisma : this.localPrisma;
+
+        this.logger.log(`Fetching invoices report from ${isOnline ? 'cloud' : 'local'} database`);
+
+        return prismaService.invoice.findMany({
             where: {
                 phone: filter?.phone || undefined,
                 createdAt: {

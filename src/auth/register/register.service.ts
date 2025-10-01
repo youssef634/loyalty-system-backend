@@ -280,7 +280,7 @@ export class RegisterService {
     let permissions: string[] = [];
 
     if (user.role === 'USER') {
-      permissions = ['transactions', 'products', 'rewards'];
+      permissions = ['dashboard','transactions', 'products', 'rewards'];
     } else if (user.role !== 'ADMIN') {
       const rolePermissions = await this.cloudPrisma.rolePermission.findMany({
         where: { role: user.role },
@@ -304,7 +304,7 @@ export class RegisterService {
     let permissions: string[] = [];
 
     if (user.role === 'USER') {
-      permissions = ['transactions', 'products', 'rewards'];
+      permissions = ['dashboard','transactions', 'products', 'rewards'];
     } else if (user.role !== 'ADMIN') {
       const rolePermissions = await this.localPrisma.rolePermission.findMany({
         where: { role: user.role },

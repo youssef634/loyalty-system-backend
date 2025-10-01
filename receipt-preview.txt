@@ -1,11 +1,11 @@
 *** LOYALTY RECEIPT ***
-Invoice #8
-Date: Oct 01, 2025, 12:28 AM
+Invoice #40
+Date: Oct 01, 2025, 03:45 PM
 Customer: Youssef khaled
 --------------------------------------
 Item               Price   Qty   Total
 --------------------------------------
-coffee               2.00   x1     2.00
+Smash burger         2.00   x1     2.00
 TOTAL:    2.00
 POINTS EARNED: 20
 Thank you for your purchase!

@@ -18,6 +18,8 @@ export class RolesGuard implements CanActivate {
     // Admin always has access
     if (user.role === 'ADMIN') return true;
 
+    if (user.role === 'USER' && page === 'dashboard') return true;
+    
     const hasPermission = await this.rolesService.hasPagePermission(user.role, page);
     if (!hasPermission) throw new ForbiddenException('Access denied');
 
