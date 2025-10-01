@@ -25,9 +25,11 @@ import { CategoriesModule } from './categories/categories.module';
 import { ManagersModule } from './users/managers.module';
 import { ReportModule } from './reports/report.module';
 import { SyncModule } from './sync/sync.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({ isGlobal: true }),
 
     PassportModule.register({ defaultStrategy: 'jwt' }),

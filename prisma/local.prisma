@@ -108,6 +108,7 @@ model MyReward {
   status              RewardStatus @default(PENDING)
   date                DateTime @default(now())
   note                String?
+  synced              Boolean       @default(false)
 
   user                User              @relation(fields: [userId], references: [id])
   cafeProduct         CafeProduct?      @relation(fields: [cafeProductId], references: [id])

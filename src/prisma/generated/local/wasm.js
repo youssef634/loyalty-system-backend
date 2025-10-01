@@ -194,7 +194,8 @@ exports.Prisma.MyRewardScalarFieldEnum = {
   type: 'type',
   status: 'status',
   date: 'date',
-  note: 'note'
+  note: 'note',
+  synced: 'synced'
 };
 
 exports.Prisma.TransactionScalarFieldEnum = {
