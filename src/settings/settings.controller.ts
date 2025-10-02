@@ -1,13 +1,14 @@
-import { Controller, Get, Put, Body, Request, UseGuards, Post } from '@nestjs/common';
+import { Controller, Get, Put, Body, Request, UseGuards, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { SettingsService } from './settings.service';
 import { AuthGuard } from '@nestjs/passport';
 import { Permissions } from '../common/permissions.decorator';
 import { RolesGuard } from '../common/roles.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('settings')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 export class SettingsController {
-  constructor(private settingsService: SettingsService) {}
+  constructor(private settingsService: SettingsService) { }
 
   @Get()
   getSettings(@Request() req) {
@@ -16,7 +17,12 @@ export class SettingsController {
 
   @Post()
   @Permissions('settings')
-  updateSettings(@Request() req, @Body() body) {
-    return this.settingsService.updateSettings(req.user.id, body);
-  }  
+  @UseInterceptors(FileInterceptor('image'))
+  updateSettings(
+    @Request() req,
+    @Body() body: any,
+    @UploadedFile() file?: Express.Multer.File, 
+  ) {
+    return this.settingsService.updateSettings(req.user.id, body, file);
+  }
 }
