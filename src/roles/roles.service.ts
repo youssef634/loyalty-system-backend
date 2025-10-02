@@ -27,12 +27,15 @@ export class RolesService {
     return !!permission;
   }
 
-  async createPermission(role: Role, pages: string[]) {
+  async createPermission(currentUserId: number, role: Role, pages: string[]) {
     const isOnline = this.connectionService.getConnectionStatus();
 
     if (!isOnline) {
       throw new BadRequestException('Permission creation requires internet connection');
     }
+
+    const user = await this.cloudPrisma.user.findUnique({ where: { id: currentUserId } });
+    if (!user) throw new NotFoundException('User not found');
 
     if (!pages || pages.length === 0) throw new BadRequestException('Pages required');
 
@@ -46,6 +49,20 @@ export class RolesService {
           data: { role, page },
         });
         created.push(perm);
+
+        // ✅ Create log
+        try {
+          await this.cloudPrisma.createLog.create({
+            data: {
+              userId: currentUserId,
+              userName: user.enName,
+              screen: 'roles',
+              message: `${user.enName} create permissions for role ${role} on page ${page}`,
+            }
+          });
+        } catch (err) {
+          this.logger.warn(`⚠️ Failed to create log: ${err}`);
+        }
 
         // Sync to local database
         try {
@@ -62,12 +79,15 @@ export class RolesService {
     return created;
   }
 
-  async updatePermissions(role: Role, pages: string[]) {
+  async updatePermissions(currentUserId: number, role: Role, pages: string[]) {
     const isOnline = this.connectionService.getConnectionStatus();
 
     if (!isOnline) {
       throw new BadRequestException('Permission updates require internet connection');
     }
+
+    const user = await this.cloudPrisma.user.findUnique({ where: { id: currentUserId } });
+    if (!user) throw new NotFoundException('User not found');
 
     // Delete all old permissions for this role in cloud
     await this.cloudPrisma.rolePermission.deleteMany({ where: { role } });
@@ -79,6 +99,20 @@ export class RolesService {
       )
     );
 
+    // ✅ Update log
+    try {
+      await this.cloudPrisma.createLog.create({
+        data: {
+          userId: currentUserId,
+          userName: user.enName,
+          screen: 'roles',
+          message: `${user.enName} update permissions for role ${role} on page ${pages.join(', ')}`,
+        }
+      });
+    } catch (err) {
+      this.logger.warn(`⚠️ Failed to create update log: ${err}`);
+    }
+
     // Sync to local database with the same IDs
     try {
       await this.localPrisma.rolePermission.deleteMany({ where: { role } });
@@ -87,7 +121,7 @@ export class RolesService {
         created.map(perm =>
           this.localPrisma.rolePermission.create({
             data: {
-              id: perm.id,  
+              id: perm.id,
               role: perm.role,
               page: perm.page,
             },

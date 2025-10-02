@@ -21,7 +21,7 @@ export class SettingsController {
   updateSettings(
     @Request() req,
     @Body() body: any,
-    @UploadedFile() file?: Express.Multer.File, 
+    @UploadedFile() file?: Express.Multer.File,
   ) {
     return this.settingsService.updateSettings(req.user.id, body, file);
   }

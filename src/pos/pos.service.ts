@@ -13,9 +13,9 @@ export class PosService {
     private localPrisma: LocalPrismaService,
     private printService: PrintService,
     private connectionService: ConnectionService,
-  ) {}
+  ) { }
 
-  async createInvoice(data: {
+  async createInvoice(currentUserId: number ,data: {
     userId?: number;
     phone?: string;
     email?: string;
@@ -41,16 +41,19 @@ export class PosService {
 
     if (isOnline) {
       this.logger.log('🌐 Creating invoice in CLOUD database');
-      return await this.createInvoiceInCloud(data);
+      return await this.createInvoiceInCloud( currentUserId ,data);
     } else {
       this.logger.warn('📴 OFFLINE mode - Creating invoice in LOCAL database');
       return await this.createInvoiceInLocal(data);
     }
   }
 
-  private async createInvoiceInCloud(data: any) {
+  private async createInvoiceInCloud(currentUserId : number, data: any) {
     const settings = await this.cloudPrisma.settings.findUnique({ where: { userId: 1 } });
     if (!settings) throw new NotFoundException('Settings not found.');
+
+    const currentUser = await this.cloudPrisma.user.findUnique({ where: { id: currentUserId } });
+    if (!currentUser) throw new NotFoundException('User not found');
 
     const preDiscountTotal = data.items.reduce((sum, item) => sum + item.total, 0);
     const points = settings.enCurrency === 'USD'
@@ -62,8 +65,8 @@ export class PosService {
       user = data.userId
         ? await this.cloudPrisma.user.findUnique({ where: { id: data.userId } })
         : data.phone
-        ? await this.cloudPrisma.user.findUnique({ where: { phone: data.phone } })
-        : await this.cloudPrisma.user.findUnique({ where: { email: data.email } });
+          ? await this.cloudPrisma.user.findUnique({ where: { phone: data.phone } })
+          : await this.cloudPrisma.user.findUnique({ where: { email: data.email } });
       if (!user) throw new NotFoundException('User not found.');
     }
 
@@ -115,6 +118,20 @@ export class PosService {
       return { invoice, transaction };
     });
 
+    // ✅ Create log
+    try {
+      await this.cloudPrisma.createLog.create({
+        data: {
+          userId: currentUserId,
+          userName: currentUser.enName,
+          screen: 'POS',
+          message: `${currentUser.enName} created invoice #${result.invoice.id} ${user ? `for ${user.enName}` : 'for Guest'}`,
+        }
+      });
+    } catch (err) {
+      this.logger.warn(`⚠️ Failed to create log: ${err}`);
+    }
+
     // Sync to local database
     try {
       await this.localPrisma.$transaction(async (tx) => {
@@ -132,7 +149,7 @@ export class PosService {
             createdAt: result.invoice.createdAt,
             items: {
               create: data.items.map((item) => ({
-                id: result.invoice.items.find(i => 
+                id: result.invoice.items.find(i =>
                   i.quantity === item.quantity &&
                   i.price === item.price &&
                   i.categoryId === item.categoryId &&
@@ -193,8 +210,8 @@ export class PosService {
       user = data.userId
         ? await this.localPrisma.user.findUnique({ where: { id: data.userId } })
         : data.phone
-        ? await this.localPrisma.user.findUnique({ where: { phone: data.phone } })
-        : await this.localPrisma.user.findUnique({ where: { email: data.email } });
+          ? await this.localPrisma.user.findUnique({ where: { phone: data.phone } })
+          : await this.localPrisma.user.findUnique({ where: { email: data.email } });
       if (!user) throw new NotFoundException('User not found.');
     }
 

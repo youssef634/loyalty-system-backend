@@ -1,9 +1,11 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { CloudPrismaService} from '../prisma/prisma.service/cloud-prisma.service';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import { CloudPrismaService } from '../prisma/prisma.service/cloud-prisma.service';
 import { RewardStatus } from '@prisma/client';
+import { use } from 'passport';
 
 @Injectable()
 export class RedeemService {
+    private readonly logger = new Logger(RedeemService.name);
     constructor(private prisma: CloudPrismaService) { }
 
     async redeemPoints(userId: number, productId: number, type: 'cafe' | 'restaurant') {
@@ -59,6 +61,20 @@ export class RedeemService {
                 status: RewardStatus.PENDING,
             },
         });
+
+        // ✅ Create log
+        try {
+            await this.prisma.createLog.create({
+                data: {
+                    userId: userId,
+                    userName: user.enName,
+                    screen: 'redeem',
+                    message: `${user.enName} requested a reward redemption for ${product.enName} (${product.points} points)`,
+                }
+            });
+        } catch (err) {
+            this.logger.warn(`⚠️ Failed to create log: ${err}`);
+        }
 
         return {
             message: 'Reward redemption requested successfully',

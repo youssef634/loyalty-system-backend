@@ -21,7 +21,7 @@ export class RestaurantProductsService {
     private cloudPrisma: CloudPrismaService,
     private localPrisma: LocalPrismaService,
     private connectionService: ConnectionService,
-  ) {}
+  ) { }
 
   async getProducts(
     page: number = 1,
@@ -151,6 +151,9 @@ export class RestaurantProductsService {
       throw new ForbiddenException('Product creation requires internet connection');
     }
 
+    const user = await this.cloudPrisma.user.findUnique({ where: { id: currentUserId } });
+    if (!user) throw new NotFoundException('User not found');
+
     const uploadDir = this.getRestaurantProductsUploadPath();
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -205,6 +208,20 @@ export class RestaurantProductsService {
       },
     });
 
+    // ✅ Create log
+    try {
+      await this.cloudPrisma.createLog.create({
+        data: {
+          userId: currentUserId,
+          userName: user.enName,
+          screen: 'restaurant-products',
+          message: `${user.enName} create restaurant product ${product.enName}`
+        }
+      });
+    } catch (err) {
+      this.logger.warn(`⚠️ Failed to create log: ${err}`);
+    }
+
     try {
       await this.localPrisma.restaurantProduct.create({
         data: {
@@ -237,6 +254,9 @@ export class RestaurantProductsService {
     if (!isOnline) {
       throw new ForbiddenException('Product updates require internet connection');
     }
+
+    const user = await this.cloudPrisma.user.findUnique({ where: { id: currentUserId } });
+    if (!user) throw new NotFoundException('User not found');
 
     const product = await this.cloudPrisma.restaurantProduct.findUnique({ where: { id } });
     if (!product) throw new NotFoundException('Product not found');
@@ -307,6 +327,20 @@ export class RestaurantProductsService {
       },
     });
 
+    // ✅ Update log
+    try {
+      await this.cloudPrisma.updateLog.create({
+        data: {
+          userId: currentUserId,
+          userName: user.enName,
+          screen: 'restaurant-products',
+          message: `${user.enName} Update restaurant product ${product.enName}`
+        }
+      });
+    } catch (err) {
+      this.logger.warn(`⚠️ Failed to create update log: ${err}`);
+    }
+
     try {
       await this.localPrisma.restaurantProduct.update({
         where: { id },
@@ -335,6 +369,9 @@ export class RestaurantProductsService {
       throw new ForbiddenException('Product deletion requires internet connection');
     }
 
+    const user = await this.cloudPrisma.user.findUnique({ where: { id: currentUserId } });
+    if (!user) throw new NotFoundException('User not found');
+
     const product = await this.cloudPrisma.restaurantProduct.findUnique({ where: { id } });
     if (!product) throw new NotFoundException('Product not found');
 
@@ -347,6 +384,20 @@ export class RestaurantProductsService {
     }
 
     await this.cloudPrisma.restaurantProduct.delete({ where: { id } });
+
+    // ✅ Delete log
+    try {
+      await this.cloudPrisma.deleteLog.create({
+        data: {
+          userId: currentUserId,
+          userName: user.enName,
+          screen: 'restaurant-products',
+          message: `${user.enName} Delete restaurant product ${product.enName}`
+        }
+      });
+    } catch (err) {
+      this.logger.warn(`⚠️ Failed to create delete log: ${err}`);
+    }
 
     try {
       await this.localPrisma.restaurantProduct.delete({ where: { id } });

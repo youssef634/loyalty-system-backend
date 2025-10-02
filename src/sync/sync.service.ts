@@ -16,7 +16,7 @@ export class SyncService {
     private connectionService: ConnectionService,
   ) { }
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron(CronExpression.EVERY_30_MINUTES)
   async autoSync() {
     const now = Date.now();
     // Prevent rapid re-triggers within the same instance

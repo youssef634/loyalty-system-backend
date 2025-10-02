@@ -13,11 +13,11 @@ export class CategoriesService {
     private cloudPrisma: CloudPrismaService,
     private localPrisma: LocalPrismaService,
     private connectionService: ConnectionService,
-  ) {}
+  ) { }
 
-  async create(dto: CreateCategoryDto) {
+  async create( id: number , enName: string , dto: CreateCategoryDto) {
     const isOnline = this.connectionService.getConnectionStatus();
-    
+
     if (!isOnline) {
       throw new ForbiddenException('Category creation requires internet connection');
     }
@@ -25,6 +25,20 @@ export class CategoriesService {
     const category = await this.cloudPrisma.category.create({
       data: dto,
     });
+
+    // ✅ Log the create action
+    try {
+      await this.cloudPrisma.createLog.create({
+        data: {
+          userId: id,
+          userName: enName,
+          screen: 'categories',
+          message: `${enName} created category ${category.enName}`,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`⚠️ Failed to create create log: ${error}`);
+    }
 
     // Sync to local
     try {
@@ -45,12 +59,12 @@ export class CategoriesService {
     return category;
   }
 
-  async createCafe(dto: Omit<CreateCategoryDto, 'type'>) {
-    return this.create({ ...dto, type: CategoryType.CAFE });
+  async createCafe(id: number , enName: string , dto: Omit<CreateCategoryDto, 'type'>) {
+    return this.create(id, enName, { ...dto, type: CategoryType.CAFE });
   }
 
-  async createRestaurant(dto: Omit<CreateCategoryDto, 'type'>) {
-    return this.create({ ...dto, type: CategoryType.RESTAURANT });
+  async createRestaurant(id: number , enName: string , dto: Omit<CreateCategoryDto, 'type'>) {
+    return this.create(id, enName, { ...dto, type: CategoryType.RESTAURANT });
   }
 
   async findAll(type?: CategoryType) {
@@ -69,9 +83,9 @@ export class CategoriesService {
     }
   }
 
-  async update(id: number, dto: UpdateCategoryDto) {
+  async update(userId: number , enName: string , id: number, dto: UpdateCategoryDto) {
     const isOnline = this.connectionService.getConnectionStatus();
-    
+
     if (!isOnline) {
       throw new ForbiddenException('Category updates require internet connection');
     }
@@ -83,6 +97,20 @@ export class CategoriesService {
       where: { id },
       data: dto,
     });
+
+    // ✅ Log the update action
+    try {
+      await this.cloudPrisma.updateLog.create({
+        data: {
+          userId: userId,
+          userName: enName,
+          screen: 'categories',
+          message: `${enName} updated category ${updated.enName}`,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`⚠️ Failed to create update log: ${error}`);
+    }
 
     // Sync to local
     try {
@@ -102,9 +130,9 @@ export class CategoriesService {
     return updated;
   }
 
-  async remove(id: number) {
+  async remove(userId, enName, id: number) {
     const isOnline = this.connectionService.getConnectionStatus();
-    
+
     if (!isOnline) {
       throw new ForbiddenException('Category deletion requires internet connection');
     }
@@ -113,6 +141,20 @@ export class CategoriesService {
     if (!exists) throw new NotFoundException('Category not found');
 
     await this.cloudPrisma.category.delete({ where: { id } });
+
+    // ✅ Log the delete action
+    try {
+      await this.cloudPrisma.deleteLog.create({
+        data: {
+          userId: userId,
+          userName: enName,
+          screen: 'categories',
+          message: `${enName} deleted category ${exists.enName}`,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`⚠️ Failed to create delete log: ${error}`);
+    }
 
     // Sync deletion to local
     try {

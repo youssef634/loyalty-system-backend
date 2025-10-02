@@ -38,7 +38,7 @@ export class UsersService {
         return `http://localhost:3000/uploads/qrcodes/${fileName}`;
     }
 
-    async addUser(currentUserId: number, data: CreateUserDto) {
+    async addUser(currentUserId: number, currentUserName: string, data: CreateUserDto) {
         const isOnline = this.connectionService.getConnectionStatus();
 
         if (!isOnline) {
@@ -83,6 +83,20 @@ export class UsersService {
                 createdAt: true
             }
         });
+
+        // ✅ Create log
+        try {
+            await this.cloudPrisma.createLog.create({
+                data: {
+                    userId: currentUserId,
+                    userName: currentUserName,
+                    screen: 'users',
+                    message: `${currentUserName} created user ${updatedUser.enName} with phone (${updatedUser.phone})`
+                }
+            });
+        } catch (err) {
+            this.logger.warn(`⚠️ Failed to create log: ${err}`);
+        }
 
         // Sync to local
         try {
@@ -190,7 +204,7 @@ export class UsersService {
         };
     }
 
-    async deleteUser(currentUserId: number, id: number) {
+    async deleteUser(currentUserId: number, currentUserName: string, id: number) {
         const isOnline = this.connectionService.getConnectionStatus();
 
         if (!isOnline) {
@@ -233,6 +247,21 @@ export class UsersService {
         // Delete the user record from cloud DB
         const deleted = await this.cloudPrisma.user.delete({ where: { id } });
 
+        // ✅ Delete log
+        try {
+            await this.cloudPrisma.deleteLog.create({
+                data: {
+                    userId: currentUserId,
+                    userName: currentUserName,
+                    screen: 'users',
+                    message: `${currentUserName} deleted user ${deleted.enName}`
+                }
+            });
+        } catch (err) {
+            this.logger.warn(`⚠️ Failed to create delete log: ${err}`);
+        }
+
+
         // Sync deletion to local
         try {
             await this.localPrisma.transaction.deleteMany({ where: { userId: id } });
@@ -248,7 +277,7 @@ export class UsersService {
         return deleted;
     }
 
-    async updateUser(currentUserId: number, id: number, data: UpdateUserDto) {
+    async updateUser(currentUserId: number, currentUserName: string, id: number, data: UpdateUserDto) {
         const isOnline = this.connectionService.getConnectionStatus();
 
         if (!isOnline) {
@@ -297,6 +326,20 @@ export class UsersService {
             }
         });
 
+        // ✅ Update log
+        try {
+            await this.cloudPrisma.updateLog.create({
+                data: {
+                    userId: currentUserId,
+                    userName: currentUserName,
+                    screen: 'users',
+                    message: `${currentUserName} updated user ${updated.enName}`
+                }
+            });
+        } catch (err) {
+            this.logger.warn(`⚠️ Failed to create update log: ${err}`);
+        }
+
         // Sync to local
         try {
             const localUpdateData: any = {};
@@ -322,6 +365,7 @@ export class UsersService {
 
     async addPoints(
         currentUserId: number,
+        currentUserName: string,
         userId: number,
         points: number,
     ) {
@@ -373,6 +417,20 @@ export class UsersService {
             },
         });
 
+        // ✅ Log points addition as "create"
+        try {
+            await this.cloudPrisma.createLog.create({
+                data: {
+                    userId: currentUserId,
+                    userName: currentUserName,
+                    screen: 'users',
+                    message: `${currentUserName} added ${points} points to user ${updatedUser.enName}`
+                }
+            });
+        } catch (err) {
+            this.logger.warn(`⚠️ Failed to create log: ${err}`);
+        }
+
         // Sync to local
         try {
             await this.localPrisma.user.update({
@@ -403,11 +461,11 @@ export class UsersService {
         };
     }
 
-    async deleteUsers(currentUserId: number, ids: number[]) {
+    async deleteUsers(currentUserId: number, currentUserName: string ,ids: number[]) {
         const results = [];
         for (const id of ids) {
             try {
-                await this.deleteUser(currentUserId, id);
+                await this.deleteUser(currentUserId, currentUserName, id);
                 results.push({ id, status: 'deleted' });
             } catch (error) {
                 results.push({ id, status: 'error', message: error });

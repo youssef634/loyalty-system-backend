@@ -14,7 +14,7 @@ export class SettingsService {
         private cloudPrisma: CloudPrismaService,
         private localPrisma: LocalPrismaService,
         private connectionService: ConnectionService,
-    ) {}
+    ) { }
 
     private getSettingsUploadPath() {
         const uploadDir = path.join(process.cwd(), 'uploads/settings');
@@ -78,7 +78,7 @@ export class SettingsService {
         file?: Express.Multer.File,
     ) {
         const isOnline = this.connectionService.getConnectionStatus();
-        
+
         if (!isOnline) {
             throw new ForbiddenException('Settings updates require internet connection');
         }
@@ -163,6 +163,20 @@ export class SettingsService {
                     where: { id: s.id },
                     data: updateData,
                 });
+
+                // ✅ Update log
+                try {
+                    await this.cloudPrisma.updateLog.create({
+                        data: {
+                            userId: userId,
+                            userName: user.enName,
+                            screen: 'settings',
+                            message: `${user.enName} updated settings`
+                        }
+                    });
+                } catch (err) {
+                    this.logger.warn(`⚠️ Failed to create update log: ${err}`);
+                }
 
                 // Sync to local database
                 try {

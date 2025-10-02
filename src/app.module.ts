@@ -26,6 +26,7 @@ import { ManagersModule } from './users/managers.module';
 import { ReportModule } from './reports/report.module';
 import { SyncModule } from './sync/sync.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { LogsModule } from './logs/logs.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ManagersModule,
     ReportModule,
     SyncModule,
+    LogsModule,
     
   ],
   controllers: [AppController],

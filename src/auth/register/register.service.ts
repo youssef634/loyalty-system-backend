@@ -162,6 +162,19 @@ export class RegisterService {
       permissions = rolePermissions.map(p => p.page);
     }
 
+    try {
+      await this.cloudPrisma.loginLog.create({
+        data: {
+          userId: user.id,
+          userName: user.enName,
+          screen: 'Login',
+          message: `${user.enName} logged in successfully`,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`⚠️ Failed to create login log: ${error}`);
+    }
+
     // Sync user to local database for future offline access
     try {
       await this.localPrisma.user.upsert({
@@ -280,7 +293,7 @@ export class RegisterService {
     let permissions: string[] = [];
 
     if (user.role === 'USER') {
-      permissions = ['dashboard','transactions', 'products', 'rewards'];
+      permissions = ['dashboard', 'transactions', 'products', 'rewards'];
     } else if (user.role !== 'ADMIN') {
       const rolePermissions = await this.cloudPrisma.rolePermission.findMany({
         where: { role: user.role },
@@ -304,7 +317,7 @@ export class RegisterService {
     let permissions: string[] = [];
 
     if (user.role === 'USER') {
-      permissions = ['dashboard','transactions', 'products', 'rewards'];
+      permissions = ['dashboard', 'transactions', 'products', 'rewards'];
     } else if (user.role !== 'ADMIN') {
       const rolePermissions = await this.localPrisma.rolePermission.findMany({
         where: { role: user.role },

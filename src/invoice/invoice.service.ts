@@ -177,12 +177,15 @@ export class InvoiceService {
         };
     }
 
-    async deleteInvoice(id: number) {
+    async deleteInvoice(currentUserId: number, id: number) {
         const isOnline = this.connectionService.getConnectionStatus();
 
         if (!isOnline) {
             throw new ForbiddenException('Invoice deletion requires internet connection');
         }
+
+        const currentUser = await this.cloudPrisma.user.findUnique({ where: { id: currentUserId } });
+        if (!currentUser) throw new NotFoundException('User not found');
 
         // Find the invoice and include its transaction
         const invoice = await this.cloudPrisma.invoice.findUnique({
@@ -224,6 +227,20 @@ export class InvoiceService {
 
         // Delete the invoice itself
         await this.cloudPrisma.invoice.delete({ where: { id } });
+
+        // ✅ Delete log
+        try {
+            await this.cloudPrisma.deleteLog.create({
+                data: {
+                    userId: currentUserId,
+                    userName: currentUser.enName,
+                    screen: 'invoices',
+                    message: `${currentUser.enName} Delete invoice ${invoice.id}`
+                }
+            });
+        } catch (err) {
+            this.logger.warn(`⚠️ Failed to create delete log: ${err}`);
+        }
 
         // Sync deletion to local
         try {

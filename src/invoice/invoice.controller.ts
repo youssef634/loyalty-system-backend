@@ -1,8 +1,9 @@
-import { Controller, Delete, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, ParseIntPipe, Query, UseGuards , Request} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { InvoiceService } from './invoice.service';
 import { Permissions } from '../common/permissions.decorator';
 import { RolesGuard } from '../common/roles.guard';
+import { request } from 'express';
 
 @Controller('invoices')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -29,7 +30,9 @@ export class InvoiceController {
   /** 🔹 DELETE /invoices/:id → delete invoice by id */
   @Delete(':id')
   @Permissions('invoices')
-  async deleteInvoice(@Param('id', ParseIntPipe) id: number) {
-    return this.invoiceService.deleteInvoice(id);
+  async deleteInvoice(
+    @Request() req,
+    @Param('id', ParseIntPipe) id: number) {
+    return this.invoiceService.deleteInvoice(req.user.id , id);
   }
 }

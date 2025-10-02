@@ -14,9 +14,9 @@ export class ManagersService {
     private cloudPrisma: CloudPrismaService,
     private localPrisma: LocalPrismaService,
     private connectionService: ConnectionService,
-  ) {}
+  ) { }
 
-  async createManager(data: CreateUserDto) {
+  async createManager(userId: number, userName: string, data: CreateUserDto) {
     const isOnline = this.connectionService.getConnectionStatus();
 
     if (!isOnline) {
@@ -51,6 +51,20 @@ export class ManagersService {
       },
     });
 
+    // ✅ Log creation
+    try {
+      await this.cloudPrisma.createLog.create({
+        data: {
+          userId,
+          userName,
+          screen: 'managers',
+          message: `${userName} created manager ${manager.enName} with type ${manager.role}`,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`⚠️ Failed to create create log: ${error}`);
+    }
+
     // Sync to local
     try {
       await this.localPrisma.user.create({
@@ -72,6 +86,114 @@ export class ManagersService {
     }
 
     return manager;
+  }
+
+  async updateManager(userId: number, userName: string, id: number, data: UpdateUserDto) {
+    const isOnline = this.connectionService.getConnectionStatus();
+
+    if (!isOnline) {
+      throw new ForbiddenException('Manager updates require internet connection');
+    }
+
+    const manager = await this.cloudPrisma.user.findUnique({ where: { id } });
+    if (!manager) throw new NotFoundException('Manager not found');
+
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10);
+    }
+
+    if (data.role === Role.USER) {
+      throw new BadRequestException('Cannot downgrade manager to USER here');
+    }
+
+    const updated = await this.cloudPrisma.user.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        enName: true,
+        arName: true,
+        email: true,
+        phone: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    // ✅ Log update
+    try {
+      await this.cloudPrisma.updateLog.create({
+        data: {
+          userId,
+          userName,
+          screen: 'managers',
+          message: `${userName} updated manager ${updated.enName}`,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`⚠️ Failed to create update log: ${error}`);
+    }
+
+    // Sync to local
+    try {
+      const localUpdateData: any = {};
+      if (data.enName) localUpdateData.enName = data.enName;
+      if (data.arName) localUpdateData.arName = data.arName;
+      if (data.email) localUpdateData.email = data.email;
+      if (data.phone) localUpdateData.phone = data.phone;
+      if (data.password) localUpdateData.password = data.password;
+      if (data.role) localUpdateData.role = data.role;
+
+      await this.localPrisma.user.update({
+        where: { id },
+        data: localUpdateData,
+      });
+      this.logger.log(`Manager ${id} update synced to local database`);
+    } catch (error) {
+      this.logger.warn(`Failed to sync manager update to local DB: ${error}`);
+    }
+
+    return updated;
+  }
+
+  async removeManager(userId: number, userName: string, id: number) {
+    const isOnline = this.connectionService.getConnectionStatus();
+
+    if (!isOnline) {
+      throw new ForbiddenException('Manager deletion requires internet connection');
+    }
+
+    const manager = await this.cloudPrisma.user.findUnique({ where: { id } });
+    if (!manager) throw new NotFoundException('Manager not found');
+
+    const deleted = await this.cloudPrisma.user.delete({
+      where: { id },
+      select: { id: true, enName: true, email: true, role: true },
+    });
+
+    // ✅ Log delete
+    try {
+      await this.cloudPrisma.deleteLog.create({
+        data: {
+          userId,
+          userName,
+          screen: 'managers',
+          message: `${userName} deleted manager ${deleted.enName}`,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`⚠️ Failed to create delete log: ${error}`);
+    }
+
+    // Sync deletion to local
+    try {
+      await this.localPrisma.user.delete({ where: { id } });
+      this.logger.log(`Manager ${id} deletion synced to local database`);
+    } catch (error) {
+      this.logger.warn(`Failed to sync manager deletion to local DB: ${error}`);
+    }
+
+    return deleted;
   }
 
   async findAllManagers() {
@@ -106,85 +228,5 @@ export class ManagersService {
         },
       });
     }
-  }
-
-  async updateManager(id: number, data: UpdateUserDto) {
-    const isOnline = this.connectionService.getConnectionStatus();
-
-    if (!isOnline) {
-      throw new ForbiddenException('Manager updates require internet connection');
-    }
-
-    const manager = await this.cloudPrisma.user.findUnique({ where: { id } });
-    if (!manager) throw new NotFoundException('Manager not found');
-
-    if (data.password) {
-      data.password = await bcrypt.hash(data.password, 10);
-    }
-
-    if (data.role === Role.USER) {
-      throw new BadRequestException('Cannot downgrade manager to USER here');
-    }
-
-    const updated = await this.cloudPrisma.user.update({
-      where: { id },
-      data,
-      select: {
-        id: true,
-        enName: true,
-        arName: true,
-        email: true,
-        phone: true,
-        role: true,
-        createdAt: true,
-      },
-    });
-
-    // Sync to local
-    try {
-      const localUpdateData: any = {};
-      if (data.enName) localUpdateData.enName = data.enName;
-      if (data.arName) localUpdateData.arName = data.arName;
-      if (data.email) localUpdateData.email = data.email;
-      if (data.phone) localUpdateData.phone = data.phone;
-      if (data.password) localUpdateData.password = data.password;
-      if (data.role) localUpdateData.role = data.role;
-
-      await this.localPrisma.user.update({
-        where: { id },
-        data: localUpdateData,
-      });
-      this.logger.log(`Manager ${id} update synced to local database`);
-    } catch (error) {
-      this.logger.warn(`Failed to sync manager update to local DB: ${error}`);
-    }
-
-    return updated;
-  }
-
-  async removeManager(id: number) {
-    const isOnline = this.connectionService.getConnectionStatus();
-
-    if (!isOnline) {
-      throw new ForbiddenException('Manager deletion requires internet connection');
-    }
-
-    const manager = await this.cloudPrisma.user.findUnique({ where: { id } });
-    if (!manager) throw new NotFoundException('Manager not found');
-
-    const deleted = await this.cloudPrisma.user.delete({
-      where: { id },
-      select: { id: true, email: true, role: true },
-    });
-
-    // Sync deletion to local
-    try {
-      await this.localPrisma.user.delete({ where: { id } });
-      this.logger.log(`Manager ${id} deletion synced to local database`);
-    } catch (error) {
-      this.logger.warn(`Failed to sync manager deletion to local DB: ${error}`);
-    }
-
-    return deleted;
   }
 }

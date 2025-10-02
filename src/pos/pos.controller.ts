@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, ParseIntPipe , Request} from '@nestjs/common';
 import { PosService } from './pos.service';
 import { AuthGuard } from '@nestjs/passport';
 import { PrintService } from './print.service';
@@ -14,6 +14,7 @@ export class PosController {
   @Post()
   @Permissions('pos')
   async createInvoice(
+    @Request() req,
     @Body()
     body: {
       userId?: number;
@@ -24,7 +25,7 @@ export class PosController {
       items: { productId: number; categoryId: number ; type: 'cafe' | 'restaurant'; quantity: number; price: number; total: number }[];
     },
   ) {
-    return this.posService.createInvoice(body);
+    return this.posService.createInvoice(req.user.id, body);
   }
 
   /** 🔹 GET /pos/print/:id → print invoice by id */

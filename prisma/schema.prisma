@@ -31,6 +31,10 @@ model User {
   myRewards           MyReward[]
   settings            Settings?
   invoices            Invoice[]
+  LoginLog            LoginLog[]
+  CreateLog           CreateLog[]
+  UpdateLog           UpdateLog[]
+  DeleteLog           DeleteLog[]
 }
 
 model RolePermission {
@@ -188,6 +192,50 @@ model InvoiceItem {
   invoice             Invoice @relation(fields: [invoiceId], references: [id])
   cafeProduct         CafeProduct?      @relation(fields: [cafeProductId], references: [id])
   restaurantProduct   RestaurantProduct? @relation(fields: [restaurantProductId], references: [id])
+}
+
+model LoginLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  userName  String
+  screen    String
+  message   String?
+  date      DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model CreateLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  userName  String
+  screen    String
+  message   String?
+  date      DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model UpdateLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  userName  String
+  screen    String
+  message   String?
+  date      DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model DeleteLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  userName  String
+  screen    String
+  message   String?
+  date      DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 enum Role {

@@ -17,7 +17,7 @@ export class TransactionService {
 
     async getAllTransactions() {
         const isOnline = this.connectionService.getConnectionStatus();
-        const prismaService : any = isOnline ? this.cloudPrisma : this.localPrisma;
+        const prismaService: any = isOnline ? this.cloudPrisma : this.localPrisma;
 
         return prismaService.transaction.findMany({
             orderBy: { id: 'asc' },
@@ -48,7 +48,7 @@ export class TransactionService {
         },
     ) {
         const isOnline = this.connectionService.getConnectionStatus();
-        const prismaService : any = isOnline ? this.cloudPrisma : this.localPrisma;
+        const prismaService: any = isOnline ? this.cloudPrisma : this.localPrisma;
 
         const user = await prismaService.user.findUnique({ where: { id: currentUserId } });
         if (!user) throw new ForbiddenException('User not found');
@@ -161,10 +161,29 @@ export class TransactionService {
             throw new ForbiddenException('Transaction deletion requires internet connection');
         }
 
+        const user = await this.cloudPrisma.user.findUnique({ where: { id: currentUserId } });
+        if (!user) throw new NotFoundException('User not found');
+
         const transaction = await this.cloudPrisma.transaction.findUnique({ where: { id: transactionId } });
         if (!transaction) throw new NotFoundException('Transaction not found');
 
+        await this.cancelTransaction(currentUserId, transactionId);
+
         const deleted = await this.cloudPrisma.transaction.delete({ where: { id: transactionId } });
+
+        // ✅ Delete log
+        try {
+            await this.cloudPrisma.deleteLog.create({
+                data: {
+                    userId: currentUserId,
+                    userName: user.enName,
+                    screen: 'transactions',
+                    message: `${user.enName} Delete transactions ${transaction.id}`
+                }
+            });
+        } catch (err) {
+            this.logger.warn(`⚠️ Failed to create delete log: ${err}`);
+        }
 
         // Sync deletion to local
         try {
@@ -177,12 +196,15 @@ export class TransactionService {
         return deleted;
     }
 
-    async cancelTransaction(adminUserId: number, transactionId: number) {
+    async cancelTransaction(currentUserId: number, transactionId: number) {
         const isOnline = this.connectionService.getConnectionStatus();
 
         if (!isOnline) {
             throw new ForbiddenException('Transaction cancellation requires internet connection');
         }
+
+        const user = await this.cloudPrisma.user.findUnique({ where: { id: currentUserId } });
+        if (!user) throw new NotFoundException('User not found');
 
         const transaction = await this.cloudPrisma.transaction.findUnique({
             where: { id: transactionId },
@@ -205,6 +227,20 @@ export class TransactionService {
             where: { id: transactionId },
             data: { status: 'CANCELLED' },
         });
+
+        // ✅ Update log
+        try {
+            await this.cloudPrisma.updateLog.create({
+                data: {
+                    userId: currentUserId,
+                    userName: user.enName,
+                    screen: 'transactions',
+                    message: `${user.enName} Cancel transactions ${transaction.id}`
+                }
+            });
+        } catch (err) {
+            this.logger.warn(`⚠️ Failed to create update log: ${err}`);
+        }
 
         // Sync cancellation to local
         try {
@@ -231,12 +267,30 @@ export class TransactionService {
             throw new ForbiddenException('Transaction deletion requires internet connection');
         }
 
+        const user = await this.cloudPrisma.user.findUnique({ where: { id: currentUserId } });
+        if (!user) throw new NotFoundException('User not found');
+
         const results = [];
         for (const id of transactionIds) {
             // Cancel first
             await this.cancelTransaction(currentUserId, id);
             // Then delete
             const deleted = await this.cloudPrisma.transaction.delete({ where: { id } });
+
+            // ✅ Delete log
+            try {
+                await this.cloudPrisma.deleteLog.create({
+                    data: {
+                        userId: currentUserId,
+                        userName: user.enName,
+                        screen: 'transactions',
+                        message: `${user.enName} Delete transactions ${deleted.id}`
+                    }
+                });
+            } catch (err) {
+                this.logger.warn(`⚠️ Failed to create delete log: ${err}`);
+            }
+
             // Sync deletion to local
             try {
                 await this.localPrisma.transaction.delete({ where: { id } });

@@ -1,25 +1,39 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { 
+  Body, 
+  Controller, 
+  Delete, 
+  Get, 
+  Param, 
+  ParseIntPipe, 
+  Post, 
+  Put, 
+  Query, 
+  Request, 
+  UseGuards
+} from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { CategoryType } from '@prisma/client';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('categories')
+@UseGuards(AuthGuard('jwt'))
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
-  create(@Body() dto: CreateCategoryDto) {
-    return this.categoriesService.create(dto);
+  create(@Request() req, @Body() dto: CreateCategoryDto) {
+    return this.categoriesService.create(req.user.id , req.user.enName , dto);
   }
 
   @Post('cafe')
-  createCafe(@Body() dto: Omit<CreateCategoryDto, 'type'>) {
-    return this.categoriesService.createCafe(dto);
+  createCafe(@Request() req, @Body() dto: Omit<CreateCategoryDto, 'type'>) {
+    return this.categoriesService.createCafe(req.user.id , req.user.enName, dto);
   }
 
   @Post('restaurant')
-  createRestaurant(@Body() dto: Omit<CreateCategoryDto, 'type'>) {
-    return this.categoriesService.createRestaurant(dto);
+  createRestaurant(@Request() req, @Body() dto: Omit<CreateCategoryDto, 'type'>) {
+    return this.categoriesService.createRestaurant(req.user.id , req.user.enName, dto);
   }
 
   @Get()
@@ -38,12 +52,16 @@ export class CategoriesController {
   }
 
   @Put(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCategoryDto) {
-    return this.categoriesService.update(id, dto);
+  update(
+    @Request() req, 
+    @Param('id', ParseIntPipe) id: number, 
+    @Body() dto: UpdateCategoryDto
+  ) {
+    return this.categoriesService.update(req.user.id , req.user.enName, id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.categoriesService.remove(id);
+  remove(@Request() req, @Param('id', ParseIntPipe) id: number) {
+    return this.categoriesService.remove(req.user.id , req.user.enName, id);
   }
 }
