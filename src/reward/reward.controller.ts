@@ -61,7 +61,6 @@ export class RewardController {
         @Req() req,
         @Body('rewardIds') rewardIds: number[],
     ) {
-        const adminId = req.user.id;
-        return this.rewardService.deleteRewards(adminId, rewardIds);
+        return this.rewardService.deleteRewards(req.user.id, rewardIds);
     }
 }

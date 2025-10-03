@@ -243,6 +243,10 @@ export class RewardService {
     }
 
     private async approveRewardsInCloud(adminId: number, rewardIds: number[]) {
+
+        const currentUser = await this.cloudPrisma.user.findUnique({ where: { id: adminId } });
+        if (!currentUser) throw new NotFoundException('User not found');
+
         const results = [];
         for (const rewardId of rewardIds) {
             const reward = await this.cloudPrisma.myReward.findUnique({ where: { id: rewardId } });
@@ -266,6 +270,25 @@ export class RewardService {
                     date: new Date(),
                 },
             });
+
+            // ✅ Update log
+            try {
+                const rewardOwner = await this.cloudPrisma.user.findUnique({
+                    where: { id: reward.userId },
+                    select: { enName: true }
+                });
+
+                await this.cloudPrisma.updateLog.create({
+                    data: {
+                        userId: adminId,
+                        userName: currentUser.enName,
+                        screen: 'rewards',
+                        message: `Reward #${reward.id} (${rewardOwner?.enName ?? 'Unknown user'}) was approved by ${currentUser.enName}`,
+                    }
+                });
+            } catch (err) {
+                this.logger.warn(`⚠️ Failed to create update log: ${err}`);
+            }
 
             // Sync to local
             try {
@@ -332,6 +355,10 @@ export class RewardService {
     }
 
     private async rejectRewardsInCloud(adminId: number, rewardIds: number[], note?: string) {
+
+        const currentUser = await this.cloudPrisma.user.findUnique({ where: { id: adminId } });
+        if (!currentUser) throw new NotFoundException('User not found');
+
         const results = [];
         for (const rewardId of rewardIds) {
             const reward = await this.cloudPrisma.myReward.findUnique({
@@ -364,6 +391,25 @@ export class RewardService {
                     date: new Date(),
                 },
             });
+
+            // ✅ Update log
+            try {
+                const rewardOwner = await this.cloudPrisma.user.findUnique({
+                    where: { id: reward.userId },
+                    select: { enName: true }
+                });
+
+                await this.cloudPrisma.updateLog.create({
+                    data: {
+                        userId: adminId,
+                        userName: currentUser.enName,
+                        screen: 'rewards',
+                        message: `Reward #${reward.id} (${rewardOwner?.enName ?? 'Unknown user'}) was rejected by ${currentUser.enName}`,
+                    }
+                });
+            } catch (err) {
+                this.logger.warn(`⚠️ Failed to create update log: ${err}`);
+            }
 
             // Sync to local
             try {
@@ -448,6 +494,10 @@ export class RewardService {
     }
 
     private async deleteRewardsFromCloud(adminId: number, rewardIds: number[]) {
+
+        const currentUser = await this.cloudPrisma.user.findUnique({ where: { id: adminId } });
+        if (!currentUser) throw new NotFoundException('User not found');
+
         const results = [];
         for (const rewardId of rewardIds) {
             const reward = await this.cloudPrisma.myReward.findUnique({ where: { id: rewardId } });
@@ -457,6 +507,26 @@ export class RewardService {
             }
 
             await this.cloudPrisma.myReward.delete({ where: { id: rewardId } });
+
+            // ✅ Update log
+            try {
+                const rewardOwner = await this.cloudPrisma.user.findUnique({
+                    where: { id: reward.userId },
+                    select: { enName: true }
+                });
+
+                await this.cloudPrisma.deleteLog.create({
+                    data: {
+                        userId: adminId,
+                        userName: currentUser.enName,
+                        screen: 'rewards',
+                        message: `Reward #${reward.id} (${rewardOwner?.enName ?? 'Unknown user'}) was deleted by ${currentUser.enName}`,
+                    }
+                });
+            } catch (err) {
+                this.logger.warn(`⚠️ Failed to create delete log: ${err}`);
+            }
+
 
             // Sync to local
             try {
