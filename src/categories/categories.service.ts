@@ -32,7 +32,7 @@ export class CategoriesService {
         data: {
           userId: id,
           userName: enName,
-          screen: 'categories',
+          screen: 'products',
           message: `${enName} created category ${category.enName}`,
         },
       });
@@ -104,7 +104,7 @@ export class CategoriesService {
         data: {
           userId: userId,
           userName: enName,
-          screen: 'categories',
+          screen: 'products',
           message: `${enName} updated category ${updated.enName}`,
         },
       });
@@ -148,7 +148,7 @@ export class CategoriesService {
         data: {
           userId: userId,
           userName: enName,
-          screen: 'categories',
+          screen: 'products',
           message: `${enName} deleted category ${exists.enName}`,
         },
       });

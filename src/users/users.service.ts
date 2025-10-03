@@ -90,7 +90,7 @@ export class UsersService {
                 data: {
                     userId: currentUserId,
                     userName: currentUserName,
-                    screen: 'users',
+                    screen: 'customers',
                     message: `${currentUserName} created user ${updatedUser.enName} with phone (${updatedUser.phone})`
                 }
             });
@@ -253,7 +253,7 @@ export class UsersService {
                 data: {
                     userId: currentUserId,
                     userName: currentUserName,
-                    screen: 'users',
+                    screen: 'customers',
                     message: `${currentUserName} deleted user ${deleted.enName}`
                 }
             });
@@ -332,7 +332,7 @@ export class UsersService {
                 data: {
                     userId: currentUserId,
                     userName: currentUserName,
-                    screen: 'users',
+                    screen: 'customers',
                     message: `${currentUserName} updated user ${updated.enName}`
                 }
             });
@@ -423,7 +423,7 @@ export class UsersService {
                 data: {
                     userId: currentUserId,
                     userName: currentUserName,
-                    screen: 'users',
+                    screen: 'customers',
                     message: `${currentUserName} added ${points} points to user ${updatedUser.enName}`
                 }
             });

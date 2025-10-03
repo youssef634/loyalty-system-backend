@@ -214,7 +214,7 @@ export class RestaurantProductsService {
         data: {
           userId: currentUserId,
           userName: user.enName,
-          screen: 'restaurant-products',
+          screen: 'products',
           message: `${user.enName} create restaurant product ${product.enName}`
         }
       });
@@ -333,7 +333,7 @@ export class RestaurantProductsService {
         data: {
           userId: currentUserId,
           userName: user.enName,
-          screen: 'restaurant-products',
+          screen: 'products',
           message: `${user.enName} Update restaurant product ${product.enName}`
         }
       });
@@ -391,7 +391,7 @@ export class RestaurantProductsService {
         data: {
           userId: currentUserId,
           userName: user.enName,
-          screen: 'restaurant-products',
+          screen: 'products',
           message: `${user.enName} Delete restaurant product ${product.enName}`
         }
       });

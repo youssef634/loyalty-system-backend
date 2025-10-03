@@ -167,7 +167,10 @@ export class TransactionService {
         const transaction = await this.cloudPrisma.transaction.findUnique({ where: { id: transactionId } });
         if (!transaction) throw new NotFoundException('Transaction not found');
 
-        await this.cancelTransaction(currentUserId, transactionId);
+        // Only cancel if not already cancelled
+        if (transaction.status !== 'CANCELLED') {
+            await this.cancelTransaction(currentUserId, transactionId);
+        }
 
         const deleted = await this.cloudPrisma.transaction.delete({ where: { id: transactionId } });
 
@@ -272,9 +275,17 @@ export class TransactionService {
 
         const results = [];
         for (const id of transactionIds) {
-            // Cancel first
-            await this.cancelTransaction(currentUserId, id);
-            // Then delete
+            const transaction = await this.cloudPrisma.transaction.findUnique({ where: { id } });
+            if (!transaction) {
+                results.push({ id, status: 'not found' });
+                continue;
+            }
+
+            // Only cancel if not already cancelled
+            if (transaction.status !== 'CANCELLED') {
+                await this.cancelTransaction(currentUserId, id);
+            }
+
             const deleted = await this.cloudPrisma.transaction.delete({ where: { id } });
 
             // ✅ Delete log

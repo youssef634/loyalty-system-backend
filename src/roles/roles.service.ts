@@ -56,7 +56,7 @@ export class RolesService {
             data: {
               userId: currentUserId,
               userName: user.enName,
-              screen: 'roles',
+              screen: 'managers',
               message: `${user.enName} create permissions for role ${role} on page ${page}`,
             }
           });
@@ -105,7 +105,7 @@ export class RolesService {
         data: {
           userId: currentUserId,
           userName: user.enName,
-          screen: 'roles',
+          screen: 'managers',
           message: `${user.enName} update permissions for role ${role} on page ${pages.join(', ')}`,
         }
       });

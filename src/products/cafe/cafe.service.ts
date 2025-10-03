@@ -212,7 +212,7 @@ export class CafeProductsService {
         data: {
           userId: currentUserId,
           userName: user.enName,
-          screen: 'cafe-products',
+          screen: 'products',
           message: `${user.enName} create cafe product ${product.enName}`
         }
       });
@@ -335,7 +335,7 @@ export class CafeProductsService {
         data: {
           userId: currentUserId,
           userName: user.enName,
-          screen: 'cafe-products',
+          screen: 'products',
           message: `${user.enName} Update cafe product ${product.enName}`
         }
       });
@@ -394,7 +394,7 @@ export class CafeProductsService {
         data: {
           userId: currentUserId,
           userName: user.enName,
-          screen: 'cafe-products',
+          screen: 'products',
           message: `${user.enName} delete cafe product ${product.enName}`
         }
       });
