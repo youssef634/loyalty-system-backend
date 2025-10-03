@@ -14,6 +14,8 @@ export class LogsService {
             screen?: string;
             userName?: string;
             date?: string;
+            fromDate?: string;
+            toDate?: string;
             limit?: number;
         },
     ) {
@@ -25,16 +27,24 @@ export class LogsService {
         }
         const timezone = settings?.timezone || 'UTC';
 
-        const { table, screen, userName, date, limit = 20} = filters;
+        const { table, screen, userName, date, fromDate, toDate, limit = 20 } = filters;
 
         const queries = [];
 
-        // ✅ convert date filter into start/end of the day in given timezone
-        let dateFilter: { gte: Date; lte: Date } | undefined;
+        // Build date filter
+        let dateFilter: { gte?: Date; lte?: Date } | undefined;
         if (date) {
             const startOfDay = DateTime.fromISO(date, { zone: timezone }).startOf('day').toUTC();
             const endOfDay = DateTime.fromISO(date, { zone: timezone }).endOf('day').toUTC();
             dateFilter = { gte: startOfDay.toJSDate(), lte: endOfDay.toJSDate() };
+        } else if (fromDate || toDate) {
+            dateFilter = {};
+            if (fromDate) {
+                dateFilter.gte = DateTime.fromISO(fromDate, { zone: timezone }).startOf('day').toUTC().toJSDate();
+            }
+            if (toDate) {
+                dateFilter.lte = DateTime.fromISO(toDate, { zone: timezone }).endOf('day').toUTC().toJSDate();
+            }
         }
 
         if (!table || table.toLowerCase() === 'login') {

@@ -18,8 +18,18 @@ export class LogsController {
         @Query('screen') screen?: string,
         @Query('userName') userName?: string,
         @Query('date') date?: string,
+        @Query('fromDate') fromDate?: string,
+        @Query('toDate') toDate?: string,
         @Query('limit') limit?: number,
     ) {
-        return this.logsService.getLogs(req.user.id , page, { table, screen, userName, date, limit: limit ? Number(limit) : undefined });
+        return this.logsService.getLogs(req.user.id, page, {
+            table,
+            screen,
+            userName,
+            date,
+            fromDate,
+            toDate,
+            limit: limit ? Number(limit) : undefined,
+        });
     }
 }
