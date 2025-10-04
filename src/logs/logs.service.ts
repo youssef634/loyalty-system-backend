@@ -56,12 +56,14 @@ export class LogsService {
                             ...(userName ? { userName: { contains: userName, mode: 'insensitive' } } : {}),
                             ...(dateFilter ? { date: dateFilter } : {}),
                         },
+                        include: { user: true },
                     })
                     .then((res) =>
                         res.map((r) => ({
                             ...r,
                             table: 'Login',
                             formattedDate: DateTime.fromJSDate(r.date).setZone(timezone).toFormat('MMM dd, yyyy, hh:mm a'),
+                            user: r.user,
                         })),
                     ),
             );
@@ -76,12 +78,14 @@ export class LogsService {
                             ...(userName ? { userName: { contains: userName, mode: 'insensitive' } } : {}),
                             ...(dateFilter ? { date: dateFilter } : {}),
                         },
+                        include: { user: true },
                     })
                     .then((res) =>
                         res.map((r) => ({
                             ...r,
                             table: 'Create',
                             formattedDate: DateTime.fromJSDate(r.date).setZone(timezone).toFormat('MMM dd, yyyy, hh:mm a'),
+                            user: r.user,
                         })),
                     ),
             );
@@ -96,12 +100,14 @@ export class LogsService {
                             ...(userName ? { userName: { contains: userName, mode: 'insensitive' } } : {}),
                             ...(dateFilter ? { date: dateFilter } : {}),
                         },
+                        include: { user: true },
                     })
                     .then((res) =>
                         res.map((r) => ({
                             ...r,
                             table: 'Update',
                             formattedDate: DateTime.fromJSDate(r.date).setZone(timezone).toFormat('MMM dd, yyyy, hh:mm a'),
+                            user: r.user,
                         })),
                     ),
             );
@@ -116,12 +122,14 @@ export class LogsService {
                             ...(userName ? { userName: { contains: userName, mode: 'insensitive' } } : {}),
                             ...(dateFilter ? { date: dateFilter } : {}),
                         },
+                        include: { user: true },
                     })
                     .then((res) =>
                         res.map((r) => ({
                             ...r,
                             table: 'Delete',
                             formattedDate: DateTime.fromJSDate(r.date).setZone(timezone).toFormat('MMM dd, yyyy, hh:mm a'),
+                            user: r.user,
                         })),
                     ),
             );

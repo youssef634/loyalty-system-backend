@@ -1,23 +1,26 @@
-# Node modules
-node_modules/
-
-# Build output
-dist/
-
-# Prisma
-prisma/.env
+# Node modules
+node_modules/
+
+# Build output
+dist/
+
+# Prisma
+prisma/.env
+
+# Generated files
+receipt-preview.txt
+tsconfig.build.tsbuildinfo
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+
+tsconfig.tsbuildinfo
+config.bat
+temp_auto_push.bat
+temp_interactive_push.bat
 .env
-
-# Generated files
-receipt-preview.txt
-tsconfig.build.tsbuildinfo
-
-# Logs
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
-
-
-tsconfig.tsbuildinfo
