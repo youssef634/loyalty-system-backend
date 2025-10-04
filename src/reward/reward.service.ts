@@ -281,9 +281,9 @@ export class RewardService {
                 await this.cloudPrisma.updateLog.create({
                     data: {
                         userId: adminId,
-                        userName: currentUser.enName,
                         screen: 'rewards',
-                        message: `Reward #${reward.id} (${rewardOwner?.enName ?? 'Unknown user'}) was approved by ${currentUser.enName}`,
+                        enMessage: `Reward #${reward.id} (${rewardOwner?.enName ?? 'Unknown user'}) was approved by ${currentUser.enName}`,
+                        arMessage: `تمت الموافقة على المكافأة #${reward.id} (${rewardOwner?.enName ?? 'مستخدم غير معروف'}) بواسطة ${currentUser.enName}`,
                     }
                 });
             } catch (err) {
@@ -402,9 +402,9 @@ export class RewardService {
                 await this.cloudPrisma.updateLog.create({
                     data: {
                         userId: adminId,
-                        userName: currentUser.enName,
                         screen: 'rewards',
-                        message: `Reward #${reward.id} (${rewardOwner?.enName ?? 'Unknown user'}) was rejected by ${currentUser.enName}`,
+                        enMessage: `Reward #${reward.id} (${rewardOwner?.enName ?? 'Unknown user'}) was rejected by ${currentUser.enName}`,
+                        arMessage: `تم رفض المكافأة #${reward.id} (${rewardOwner?.enName ?? 'مستخدم غير معروف'}) بواسطة ${currentUser.enName}`,
                     }
                 });
             } catch (err) {
@@ -518,9 +518,9 @@ export class RewardService {
                 await this.cloudPrisma.deleteLog.create({
                     data: {
                         userId: adminId,
-                        userName: currentUser.enName,
                         screen: 'rewards',
-                        message: `Reward #${reward.id} (${rewardOwner?.enName ?? 'Unknown user'}) was deleted by ${currentUser.enName}`,
+                        enMessage: `Reward #${reward.id} (${rewardOwner?.enName ?? 'Unknown user'}) was deleted by ${currentUser.enName}`,
+                        arMessage: `تم حذف المكافأة #${reward.id} (${rewardOwner?.enName ?? 'مستخدم غير معروف'}) بواسطة ${currentUser.enName}`, 
                     }
                 });
             } catch (err) {

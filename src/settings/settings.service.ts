@@ -169,9 +169,9 @@ export class SettingsService {
                     await this.cloudPrisma.updateLog.create({
                         data: {
                             userId: userId,
-                            userName: user.enName,
                             screen: 'settings',
-                            message: `${user.enName} updated settings`
+                            enMessage: `${user.enName} updated settings`,
+                            arMessage: `${user.arName} تحديث الإعدادات`,
                         }
                     });
                 } catch (err) {

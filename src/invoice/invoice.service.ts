@@ -233,9 +233,9 @@ export class InvoiceService {
             await this.cloudPrisma.deleteLog.create({
                 data: {
                     userId: currentUserId,
-                    userName: currentUser.enName,
                     screen: 'invoices',
-                    message: `${currentUser.enName} Delete invoice ${invoice.id}`
+                    enMessage: `${currentUser.enName} Delete invoice ${invoice.id}`,
+                    arMessage: `${currentUser.arName} حذف فاتورة ${invoice.id}`,
                 }
             });
         } catch (err) {

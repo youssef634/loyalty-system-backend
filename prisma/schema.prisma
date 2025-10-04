@@ -197,9 +197,9 @@ model InvoiceItem {
 model LoginLog {
   id        Int      @id @default(autoincrement())
   userId    Int
-  userName  String
   screen    String
-  message   String?
+  enMessage   String?
+  arMessage   String?
   date      DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id])
@@ -208,9 +208,9 @@ model LoginLog {
 model CreateLog {
   id        Int      @id @default(autoincrement())
   userId    Int
-  userName  String
   screen    String
-  message   String?
+  enMessage   String?
+  arMessage   String?
   date      DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id])
@@ -219,9 +219,9 @@ model CreateLog {
 model UpdateLog {
   id        Int      @id @default(autoincrement())
   userId    Int
-  userName  String
   screen    String
-  message   String?
+  enMessage   String?
+  arMessage   String?
   date      DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id])
@@ -230,9 +230,9 @@ model UpdateLog {
 model DeleteLog {
   id        Int      @id @default(autoincrement())
   userId    Int
-  userName  String
   screen    String
-  message   String?
+  enMessage   String?
+  arMessage   String?
   date      DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id])

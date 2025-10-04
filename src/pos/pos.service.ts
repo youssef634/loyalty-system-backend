@@ -123,9 +123,9 @@ export class PosService {
       await this.cloudPrisma.createLog.create({
         data: {
           userId: currentUserId,
-          userName: currentUser.enName,
           screen: 'POS',
-          message: `${currentUser.enName} created invoice #${result.invoice.id} ${user ? `for ${user.enName}` : 'for Guest'}`,
+          enMessage: `${currentUser.enName} created invoice #${result.invoice.id} ${user ? `for ${user.enName}` : 'for Guest'}`,
+          arMessage: `${currentUser.arName} أنشأ الفاتورة رقم #${result.invoice.id} ${user ? `لـ ${user.arName}` : 'لضيف'}`,
         }
       });
     } catch (err) {

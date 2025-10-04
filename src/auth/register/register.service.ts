@@ -166,9 +166,9 @@ export class RegisterService {
       await this.cloudPrisma.loginLog.create({
         data: {
           userId: user.id,
-          userName: user.enName,
           screen: 'Login',
-          message: `${user.enName} logged in successfully`,
+          enMessage: `${user.enName} logged in successfully`,
+          arMessage: `${user.arName} قام بتسجيل الدخول بنجاح`,
         },
       });
     } catch (error) {

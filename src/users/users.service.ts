@@ -38,12 +38,15 @@ export class UsersService {
         return `http://localhost:3000/uploads/qrcodes/${fileName}`;
     }
 
-    async addUser(currentUserId: number, currentUserName: string, data: CreateUserDto) {
+    async addUser(currentUserId: number, data: CreateUserDto) {
         const isOnline = this.connectionService.getConnectionStatus();
 
         if (!isOnline) {
             throw new ForbiddenException('User creation requires internet connection');
         }
+
+        const currentUser = await this.cloudPrisma.user.findUnique({ where: { id: currentUserId } });
+        if (!currentUser) throw new NotFoundException('User not found');
 
         const existingUser = await this.cloudPrisma.user.findFirst({
             where: { OR: [{ email: data.email }, { phone: data.phone }] },
@@ -89,9 +92,9 @@ export class UsersService {
             await this.cloudPrisma.createLog.create({
                 data: {
                     userId: currentUserId,
-                    userName: currentUserName,
                     screen: 'customers',
-                    message: `${currentUserName} created user ${updatedUser.enName} with phone (${updatedUser.phone})`
+                    enMessage: `${currentUser.enName} created user ${updatedUser.enName} with phone (${updatedUser.phone})`,
+                    arMessage: `${currentUser.arName} أنشأ المستخدم ${updatedUser.arName} برقم الهاتف (${updatedUser.phone})`
                 }
             });
         } catch (err) {
@@ -204,12 +207,15 @@ export class UsersService {
         };
     }
 
-    async deleteUser(currentUserId: number, currentUserName: string, id: number) {
+    async deleteUser(currentUserId: number, id: number) {
         const isOnline = this.connectionService.getConnectionStatus();
 
         if (!isOnline) {
             throw new ForbiddenException('User deletion requires internet connection');
         }
+
+        const currentUser = await this.cloudPrisma.user.findUnique({ where: { id: currentUserId } });
+        if (!currentUser) throw new NotFoundException('User not found');
 
         const user = await this.cloudPrisma.user.findUnique({ where: { id } });
         if (!user || user.role !== 'USER') {
@@ -252,9 +258,9 @@ export class UsersService {
             await this.cloudPrisma.deleteLog.create({
                 data: {
                     userId: currentUserId,
-                    userName: currentUserName,
                     screen: 'customers',
-                    message: `${currentUserName} deleted user ${deleted.enName}`
+                    enMessage: `${currentUser.enName} deleted user ${deleted.enName}`,
+                    arMessage: `${currentUser.arName} حذف المستخدم ${deleted.arName}`
                 }
             });
         } catch (err) {
@@ -277,12 +283,15 @@ export class UsersService {
         return deleted;
     }
 
-    async updateUser(currentUserId: number, currentUserName: string, id: number, data: UpdateUserDto) {
+    async updateUser(currentUserId: number, id: number, data: UpdateUserDto) {
         const isOnline = this.connectionService.getConnectionStatus();
 
         if (!isOnline) {
             throw new ForbiddenException('User updates require internet connection');
         }
+
+        const currentUser = await this.cloudPrisma.user.findUnique({ where: { id: currentUserId } });
+        if (!currentUser) throw new NotFoundException('User not found');
 
         const user = await this.cloudPrisma.user.findUnique({ where: { id } });
         if (!user || user.role !== 'USER') {
@@ -331,9 +340,9 @@ export class UsersService {
             await this.cloudPrisma.updateLog.create({
                 data: {
                     userId: currentUserId,
-                    userName: currentUserName,
                     screen: 'customers',
-                    message: `${currentUserName} updated user ${updated.enName}`
+                    enMessage: `${currentUser.enName} updated user ${updated.enName}`,
+                    arMessage: `${currentUser.arName} حدث المستخدم ${updated.arName}`,
                 }
             });
         } catch (err) {
@@ -365,7 +374,6 @@ export class UsersService {
 
     async addPoints(
         currentUserId: number,
-        currentUserName: string,
         userId: number,
         points: number,
     ) {
@@ -374,6 +382,9 @@ export class UsersService {
         if (!isOnline) {
             throw new ForbiddenException('Adding points requires internet connection');
         }
+
+        const currentUser = await this.cloudPrisma.user.findUnique({ where: { id: currentUserId } });
+        if (!currentUser) throw new NotFoundException('User not found');
 
         const user = await this.cloudPrisma.user.findUnique({ where: { id: userId } });
         if (!user || user.role !== 'USER') {
@@ -422,9 +433,9 @@ export class UsersService {
             await this.cloudPrisma.createLog.create({
                 data: {
                     userId: currentUserId,
-                    userName: currentUserName,
                     screen: 'customers',
-                    message: `${currentUserName} added ${points} points to user ${updatedUser.enName}`
+                    enMessage: `${currentUser.enName} added ${points} points to user ${updatedUser.enName}`,
+                    arMessage: `${currentUser.arName} أضاف ${points} نقاط للمستخدم ${updatedUser.arName}`,
                 }
             });
         } catch (err) {
@@ -461,11 +472,11 @@ export class UsersService {
         };
     }
 
-    async deleteUsers(currentUserId: number, currentUserName: string ,ids: number[]) {
+    async deleteUsers(currentUserId: number, ids: number[]) {
         const results = [];
         for (const id of ids) {
             try {
-                await this.deleteUser(currentUserId, currentUserName, id);
+                await this.deleteUser(currentUserId,  id);
                 results.push({ id, status: 'deleted' });
             } catch (error) {
                 results.push({ id, status: 'error', message: error });

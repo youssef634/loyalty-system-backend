@@ -211,9 +211,9 @@ export class CafeProductsService {
       await this.cloudPrisma.createLog.create({
         data: {
           userId: currentUserId,
-          userName: user.enName,
           screen: 'products',
-          message: `${user.enName} create cafe product ${product.enName}`
+          enMessage: `${user.enName} create cafe product ${product.enName}`,
+          arMessage: `${user.enName} إنشاء منتج مقهى ${product.enName}`,
         }
       });
     } catch (err) {
@@ -334,9 +334,9 @@ export class CafeProductsService {
       await this.cloudPrisma.updateLog.create({
         data: {
           userId: currentUserId,
-          userName: user.enName,
           screen: 'products',
-          message: `${user.enName} Update cafe product ${product.enName}`
+          enMessage: `${user.enName} Update cafe product ${product.enName}`,
+          arMessage: `${user.enName} تعديل منتج مقهى ${product.enName}`,
         }
       });
     } catch (err) {
@@ -393,9 +393,9 @@ export class CafeProductsService {
       await this.cloudPrisma.deleteLog.create({
         data: {
           userId: currentUserId,
-          userName: user.enName,
           screen: 'products',
-          message: `${user.enName} delete cafe product ${product.enName}`
+          enMessage: `${user.enName} delete cafe product ${product.enName}`,
+          arMessage: `${user.enName} حذف منتج مقهى ${product.enName}`,
         }
       });
     } catch (err) {

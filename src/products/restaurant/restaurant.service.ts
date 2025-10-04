@@ -213,9 +213,9 @@ export class RestaurantProductsService {
       await this.cloudPrisma.createLog.create({
         data: {
           userId: currentUserId,
-          userName: user.enName,
           screen: 'products',
-          message: `${user.enName} create restaurant product ${product.enName}`
+          enMessage: `${user.enName} create restaurant product ${product.enName}`,
+          arMessage: `${user.arName} أضاف منتج مطعم ${product.arName}`,
         }
       });
     } catch (err) {
@@ -332,9 +332,9 @@ export class RestaurantProductsService {
       await this.cloudPrisma.updateLog.create({
         data: {
           userId: currentUserId,
-          userName: user.enName,
           screen: 'products',
-          message: `${user.enName} Update restaurant product ${product.enName}`
+          enMessage: `${user.enName} Update restaurant product ${product.enName}`,
+          arMessage: `${user.arName} عدل منتج مطعم ${product.arName}`,
         }
       });
     } catch (err) {
@@ -390,9 +390,9 @@ export class RestaurantProductsService {
       await this.cloudPrisma.deleteLog.create({
         data: {
           userId: currentUserId,
-          userName: user.enName,
           screen: 'products',
-          message: `${user.enName} Delete restaurant product ${product.enName}`
+          enMessage: `${user.enName} Delete restaurant product ${product.enName}`,
+          arMessage: `${user.arName} حذف منتج مطعم ${product.arName}`,
         }
       });
     } catch (err) {

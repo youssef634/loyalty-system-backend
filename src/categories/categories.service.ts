@@ -15,12 +15,15 @@ export class CategoriesService {
     private connectionService: ConnectionService,
   ) { }
 
-  async create( id: number , enName: string , dto: CreateCategoryDto) {
+  async create(currentUserId: number, dto: CreateCategoryDto) {
     const isOnline = this.connectionService.getConnectionStatus();
 
     if (!isOnline) {
       throw new ForbiddenException('Category creation requires internet connection');
     }
+
+    const currentUser = await this.cloudPrisma.user.findUnique({ where: { id: currentUserId } });
+    if (!currentUser) throw new NotFoundException('User not found');
 
     const category = await this.cloudPrisma.category.create({
       data: dto,
@@ -30,10 +33,10 @@ export class CategoriesService {
     try {
       await this.cloudPrisma.createLog.create({
         data: {
-          userId: id,
-          userName: enName,
+          userId: currentUserId,
           screen: 'products',
-          message: `${enName} created category ${category.enName}`,
+          enMessage: `${currentUser.enName} created category ${category.enName}`,
+          arMessage: `${currentUser.arName} أنشأ التصنيف ${category.arName}`,
         },
       });
     } catch (error) {
@@ -59,12 +62,12 @@ export class CategoriesService {
     return category;
   }
 
-  async createCafe(id: number , enName: string , dto: Omit<CreateCategoryDto, 'type'>) {
-    return this.create(id, enName, { ...dto, type: CategoryType.CAFE });
+  async createCafe(id: number, dto: Omit<CreateCategoryDto, 'type'>) {
+    return this.create(id, { ...dto, type: CategoryType.CAFE });
   }
 
-  async createRestaurant(id: number , enName: string , dto: Omit<CreateCategoryDto, 'type'>) {
-    return this.create(id, enName, { ...dto, type: CategoryType.RESTAURANT });
+  async createRestaurant(id: number, dto: Omit<CreateCategoryDto, 'type'>) {
+    return this.create(id, { ...dto, type: CategoryType.RESTAURANT });
   }
 
   async findAll(type?: CategoryType) {
@@ -83,12 +86,15 @@ export class CategoriesService {
     }
   }
 
-  async update(userId: number , enName: string , id: number, dto: UpdateCategoryDto) {
+  async update(userId: number, id: number, dto: UpdateCategoryDto) {
     const isOnline = this.connectionService.getConnectionStatus();
 
     if (!isOnline) {
       throw new ForbiddenException('Category updates require internet connection');
     }
+
+    const currentUser = await this.cloudPrisma.user.findUnique({ where: { id: userId } });
+    if (!currentUser) throw new NotFoundException('User not found');
 
     const exists = await this.cloudPrisma.category.findUnique({ where: { id } });
     if (!exists) throw new NotFoundException('Category not found');
@@ -103,9 +109,10 @@ export class CategoriesService {
       await this.cloudPrisma.updateLog.create({
         data: {
           userId: userId,
-          userName: enName,
           screen: 'products',
-          message: `${enName} updated category ${updated.enName}`,
+          enMessage: `${currentUser.enName} updated category ${updated.enName}`,
+          arMessage: `${currentUser.arName} عدل التصنيف ${updated.arName}`,
+
         },
       });
     } catch (error) {
@@ -130,8 +137,11 @@ export class CategoriesService {
     return updated;
   }
 
-  async remove(userId, enName, id: number) {
+  async remove(userId, id: number) {
     const isOnline = this.connectionService.getConnectionStatus();
+
+    const currentUser = await this.cloudPrisma.user.findUnique({ where: { id: userId } });
+    if (!currentUser) throw new NotFoundException('User not found');
 
     if (!isOnline) {
       throw new ForbiddenException('Category deletion requires internet connection');
@@ -147,9 +157,9 @@ export class CategoriesService {
       await this.cloudPrisma.deleteLog.create({
         data: {
           userId: userId,
-          userName: enName,
           screen: 'products',
-          message: `${enName} deleted category ${exists.enName}`,
+          enMessage: `${currentUser.enName} deleted category ${exists.enName}`,
+          arMessage: `${currentUser.arName} حذف التصنيف ${exists.arName}`,
         },
       });
     } catch (error) {

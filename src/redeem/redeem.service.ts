@@ -67,9 +67,9 @@ export class RedeemService {
             await this.prisma.createLog.create({
                 data: {
                     userId: userId,
-                    userName: user.enName,
                     screen: 'redeem',
-                    message: `${user.enName} requested a reward redemption for ${product.enName} (${product.points} points)`,
+                    enMessage: `${user.enName} requested a reward redemption for ${product.enName} (${product.points} points)`,
+                    arMessage: `${user.arName} طلب استرداد مكافأة مقابل ${product.arName} (${product.points} نقاط)`,
                 }
             });
         } catch (err) {

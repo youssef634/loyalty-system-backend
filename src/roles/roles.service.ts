@@ -55,9 +55,9 @@ export class RolesService {
           await this.cloudPrisma.createLog.create({
             data: {
               userId: currentUserId,
-              userName: user.enName,
               screen: 'managers',
-              message: `${user.enName} create permissions for role ${role} on page ${page}`,
+              enMessage: `${user.enName} create permissions for role ${role} on page ${page}`,
+              arMessage: `${user.arName} إنشاء أذونات للدور ${role} على الصفحة ${page}`,
             }
           });
         } catch (err) {
@@ -104,9 +104,9 @@ export class RolesService {
       await this.cloudPrisma.createLog.create({
         data: {
           userId: currentUserId,
-          userName: user.enName,
           screen: 'managers',
-          message: `${user.enName} update permissions for role ${role} on page ${pages.join(', ')}`,
+          enMessage: `${user.enName} update permissions for role ${role} on page ${pages.join(', ')}`,
+          arMessage: `${user.arName} تحديث أذونات للدور ${role} على الصفحة ${pages.join(', ')}`,
         }
       });
     } catch (err) {

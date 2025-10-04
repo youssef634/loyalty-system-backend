@@ -179,9 +179,9 @@ export class TransactionService {
             await this.cloudPrisma.deleteLog.create({
                 data: {
                     userId: currentUserId,
-                    userName: user.enName,
                     screen: 'transactions',
-                    message: `${user.enName} Delete transactions ${transaction.id}`
+                    enMessage: `${user.enName} Delete transaction ${transaction.id}`,
+                    arMessage: `${user.arName} حذف المعاملة ${transaction.id}`
                 }
             });
         } catch (err) {
@@ -236,9 +236,9 @@ export class TransactionService {
             await this.cloudPrisma.updateLog.create({
                 data: {
                     userId: currentUserId,
-                    userName: user.enName,
                     screen: 'transactions',
-                    message: `${user.enName} Cancel transactions ${transaction.id}`
+                    enMessage: `${user.enName} Cancel transactions ${transaction.id}`,
+                    arMessage: `${user.arName} إلغاء المعاملة ${transaction.id}`
                 }
             });
         } catch (err) {
@@ -293,9 +293,9 @@ export class TransactionService {
                 await this.cloudPrisma.deleteLog.create({
                     data: {
                         userId: currentUserId,
-                        userName: user.enName,
                         screen: 'transactions',
-                        message: `${user.enName} Delete transactions ${deleted.id}`
+                        enMessage: `${user.enName} Delete transactions ${deleted.id}`,
+                        arMessage: `${user.arName} حذف المعاملة ${deleted.id}`
                     }
                 });
             } catch (err) {

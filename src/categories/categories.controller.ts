@@ -23,17 +23,17 @@ export class CategoriesController {
 
   @Post()
   create(@Request() req, @Body() dto: CreateCategoryDto) {
-    return this.categoriesService.create(req.user.id , req.user.enName , dto);
+    return this.categoriesService.create(req.user.id , dto);
   }
 
   @Post('cafe')
   createCafe(@Request() req, @Body() dto: Omit<CreateCategoryDto, 'type'>) {
-    return this.categoriesService.createCafe(req.user.id , req.user.enName, dto);
+    return this.categoriesService.createCafe(req.user.id , dto);
   }
 
   @Post('restaurant')
   createRestaurant(@Request() req, @Body() dto: Omit<CreateCategoryDto, 'type'>) {
-    return this.categoriesService.createRestaurant(req.user.id , req.user.enName, dto);
+    return this.categoriesService.createRestaurant(req.user.id , dto);
   }
 
   @Get()
@@ -57,11 +57,11 @@ export class CategoriesController {
     @Param('id', ParseIntPipe) id: number, 
     @Body() dto: UpdateCategoryDto
   ) {
-    return this.categoriesService.update(req.user.id , req.user.enName, id, dto);
+    return this.categoriesService.update(req.user.id , id, dto);
   }
 
   @Delete(':id')
   remove(@Request() req, @Param('id', ParseIntPipe) id: number) {
-    return this.categoriesService.remove(req.user.id , req.user.enName, id);
+    return this.categoriesService.remove(req.user.id , id);
   }
 }

@@ -16,12 +16,15 @@ export class ManagersService {
     private connectionService: ConnectionService,
   ) { }
 
-  async createManager(userId: number, userName: string, data: CreateUserDto) {
+  async createManager(userId: number, data: CreateUserDto) {
     const isOnline = this.connectionService.getConnectionStatus();
 
     if (!isOnline) {
       throw new ForbiddenException('Manager creation requires internet connection');
     }
+
+    const currentUser = await this.cloudPrisma.user.findUnique({ where: { id: userId } });
+    if (!currentUser) throw new NotFoundException('User not found');
 
     if (!data.role || data.role === Role.USER) {
       throw new BadRequestException('Managers must have role ADMIN, ACCOUNTANT, or CASHIER');
@@ -56,9 +59,9 @@ export class ManagersService {
       await this.cloudPrisma.createLog.create({
         data: {
           userId,
-          userName,
           screen: 'managers',
-          message: `${userName} created manager ${manager.enName} with type ${manager.role}`,
+          enMessage: `${currentUser.enName} created manager ${manager.enName} with type ${manager.role}`,
+          arMessage: `${currentUser.arName} أنشأ المدير ${manager.arName} من نوع ${manager.role}`,
         },
       });
     } catch (error) {
@@ -88,12 +91,15 @@ export class ManagersService {
     return manager;
   }
 
-  async updateManager(userId: number, userName: string, id: number, data: UpdateUserDto) {
+  async updateManager(userId: number, id: number, data: UpdateUserDto) {
     const isOnline = this.connectionService.getConnectionStatus();
 
     if (!isOnline) {
       throw new ForbiddenException('Manager updates require internet connection');
     }
+
+    const currentUser = await this.cloudPrisma.user.findUnique({ where: { id: userId } });
+    if (!currentUser) throw new NotFoundException('User not found');
 
     const manager = await this.cloudPrisma.user.findUnique({ where: { id } });
     if (!manager) throw new NotFoundException('Manager not found');
@@ -125,9 +131,9 @@ export class ManagersService {
       await this.cloudPrisma.updateLog.create({
         data: {
           userId,
-          userName,
           screen: 'managers',
-          message: `${userName} updated manager ${updated.enName}`,
+          enMessage: `${currentUser.enName} updated manager ${updated.enName}`,
+          arMessage: `${currentUser.arName} حدث المدير ${updated.arName}`,
         },
       });
     } catch (error) {
@@ -156,19 +162,22 @@ export class ManagersService {
     return updated;
   }
 
-  async removeManager(userId: number, userName: string, id: number) {
+  async removeManager(userId: number, id: number) {
     const isOnline = this.connectionService.getConnectionStatus();
 
     if (!isOnline) {
       throw new ForbiddenException('Manager deletion requires internet connection');
     }
 
+    const currentUser = await this.cloudPrisma.user.findUnique({ where: { id: userId } });
+    if (!currentUser) throw new NotFoundException('User not found');
+
     const manager = await this.cloudPrisma.user.findUnique({ where: { id } });
     if (!manager) throw new NotFoundException('Manager not found');
 
     const deleted = await this.cloudPrisma.user.delete({
       where: { id },
-      select: { id: true, enName: true, email: true, role: true },
+      select: { id: true, enName: true, arName:true , email: true, role: true },
     });
 
     // ✅ Log delete
@@ -176,9 +185,9 @@ export class ManagersService {
       await this.cloudPrisma.deleteLog.create({
         data: {
           userId,
-          userName,
           screen: 'managers',
-          message: `${userName} deleted manager ${deleted.enName}`,
+          enMessage: `${currentUser.enName} deleted manager ${deleted.enName}`,
+          arMessage: `${currentUser.arName} حذف المدير ${deleted.arName}`,
         },
       });
     } catch (error) {

@@ -19,18 +19,18 @@ export class ManagersController {
   @Post()
   @Permissions('managers')
   create(@Request() req, @Body() data: CreateUserDto) {
-    return this.managersService.createManager(req.user.id, req.user.enName, data);
+    return this.managersService.createManager(req.user.id, data);
   }
 
   @Patch(':id')
   @Permissions('managers')
   update(@Request() req, @Param('id') id: string, @Body() data: UpdateUserDto) {
-    return this.managersService.updateManager(req.user.id, req.user.enName, Number(id), data);
+    return this.managersService.updateManager(req.user.id, Number(id), data);
   }
 
   @Delete(':id')
   @Permissions('managers')
   remove(@Request() req, @Param('id') id: string) {
-    return this.managersService.removeManager(req.user.id, req.user.enName, Number(id));
+    return this.managersService.removeManager(req.user.id, Number(id));
   }
 }

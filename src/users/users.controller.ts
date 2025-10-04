@@ -51,19 +51,19 @@ export class UsersController {
     @Post()
     @Permissions('customers')
     addUser(@Request() req, @Body() data: CreateUserDto) {
-        return this.usersService.addUser(req.user.id, req.user.enName , data);
+        return this.usersService.addUser(req.user.id, data);
     }
 
     @Delete(':id')
     @Permissions('customers')
     deleteUser(@Request() req, @Param('id') id: string) {
-        return this.usersService.deleteUser(req.user.id, req.user.enName , Number(id));
+        return this.usersService.deleteUser(req.user.id, Number(id));
     }
 
     @Patch(':id')
     @Permissions('customers')
     updateUser(@Request() req, @Param('id') id: string, @Body() data: UpdateUserDto) {
-        return this.usersService.updateUser(req.user.id, req.user.enName , Number(id), data);
+        return this.usersService.updateUser(req.user.id, Number(id), data);
     }
 
     @Post('add-points/:id')
@@ -75,7 +75,6 @@ export class UsersController {
     ) {
         return this.usersService.addPoints(
             req.user.id,
-            req.user.enName,
             Number(id),
             Number(points)
         );
@@ -84,6 +83,6 @@ export class UsersController {
     @Delete()
     @Permissions('customers')
     deleteUsers(@Request() req, @Body('ids') ids: number[]) {
-        return this.usersService.deleteUsers(req.user.id, req.user.enName , ids);
+        return this.usersService.deleteUsers(req.user.id, ids);
     }
 }
